@@ -2,15 +2,17 @@
 
 import { useState } from "react";
 import { allNotes, allScales, generateProgression, generateScale, NoteType } from "@/lib/chords";
-import { listProgressions } from "../../../lib/progressions";
+import { listProgressions, ScaleRecommendation } from "../../../lib/progressions";
 import { KeyboardVisual } from "@/components/music/keyboard-visual";
 import { ChordProgressionSection } from "@/components/music/chord-progression";
 import Layout from "@/components/Layout";
+import CustomProgressionForm from "@/components/CustomProgressionForm";
+import { ChordProgreessionReference } from "@/lib/chords";
 
 const allScaleOptions = Object.keys(allScales);
 
 function getScaleKeyFromLogic(logic: number[]): string | undefined {
-    return Object.entries(allScales).find(([k, v]) => JSON.stringify(v) === JSON.stringify(logic))?.[0];
+    return Object.entries(allScales).find(([, v]) => JSON.stringify(v) === JSON.stringify(logic))?.[0];
 }
 
 function camelToTitle(str: string) {
@@ -20,6 +22,8 @@ function camelToTitle(str: string) {
 const BluesPage = () => {
     const [selectedKey, setselectedKey] = useState<NoteType>("C");
     const [selectedProgression, setSelectedProgression] = useState(listProgressions[0]);
+    const [showCustomForm, setShowCustomForm] = useState(false);
+    const [customProgressions, setCustomProgressions] = useState<{ name: string, progression: ChordProgreessionReference, recommendedScales: ScaleRecommendation[] }[]>([]);
     const recommendedScaleKeys = selectedProgression.recommendedScales.map(s => getScaleKeyFromLogic(s.scale)).filter(Boolean) as string[];
     const [selectedScales, setSelectedScales] = useState<string[]>(recommendedScaleKeys);
     const progression = generateProgression(selectedProgression.progression, selectedKey);
@@ -57,15 +61,39 @@ const BluesPage = () => {
                         className="button min-w-[180px]"
                         value={selectedProgression.name}
                         onChange={e => {
-                            const prog = listProgressions.find(p => p.name === e.target.value);
-                            if (prog) setSelectedProgression(prog);
+                            const prog = [...listProgressions, ...customProgressions].find(p => p.name === e.target.value);
+                            if (prog) setSelectedProgression(prog as typeof selectedProgression);
                         }}
                     >
-                        {listProgressions.map((prog) => (
+                        {[...listProgressions, ...customProgressions].map((prog) => (
                             <option key={prog.name} value={prog.name}>{prog.name}</option>
                         ))}
                     </select>
+                    <button
+                        className="button ml-2"
+                        onClick={() => setShowCustomForm(v => !v)}
+                    >
+                        + Add custom progression
+                    </button>
                 </div>
+                {showCustomForm && (
+                    <CustomProgressionForm
+                        onClose={() => setShowCustomForm(false)}
+                        onAdd={prog => {
+                            // Map recommendedScales to ScaleRecommendation[]
+                            const fixedProg = {
+                                ...prog,
+                                recommendedScales: prog.recommendedScales.map((rec) => ({
+                                    name: (rec as { name?: string }).name ?? "",
+                                    scale: (rec as { scale?: number[] }).scale ?? []
+                                }))
+                            };
+                            setCustomProgressions(prev => [...prev, fixedProg]);
+                            setSelectedProgression(fixedProg);
+                            setShowCustomForm(false);
+                        }}
+                    />
+                )}
                 <div className="flex justify-center my-8">
                     <div className="flex flex-wrap sm:gap-16 w-full justify-center">
                         {allChordsInProgression.map((chord, index) => (
@@ -92,7 +120,7 @@ const BluesPage = () => {
                                         };
                                     })
                                 ].flat())).flat()
-                                .map(scaleData => <ScaleRecommendation key={scaleData.name} {...scaleData} />)
+                                .map(scaleData => <ScaleRecommendationSection key={scaleData.name} {...scaleData} />)
                         }
                     </div>
                     <div className="flex flex-wrap gap-2 mt-4">
@@ -115,7 +143,7 @@ const BluesPage = () => {
     )
 }
 
-const ScaleRecommendation = ({ name, notes }: { name: string, notes: NoteType[] }) => {
+const ScaleRecommendationSection = ({ name, notes }: { name: string, notes: NoteType[] }) => {
     // Split name into root and scale, then format scale part
     const [root, ...scaleParts] = name.split(" ");
     const scaleName = camelToTitle(scaleParts.join(" "));

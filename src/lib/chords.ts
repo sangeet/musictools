@@ -153,6 +153,6 @@ function generateChords(rootNote: NoteType): Record<ChordType, Chord> {
     return chords;
 }
 
-export { generateScales, generateChords, generateProgression, generateScale };
+export { generateScales, generateChords, generateProgression, generateScale, generateChordFromReference };
 export { allScales, allNotes, majorScaleLogic, minorScaleLogic, majorChordLogic, minorChordLogic, type ScaleLogic };
 export { type ChordProgreessionReference, type ChordNumberReference, type Scale, type ChordType, type Chord, type NoteType, type ChordProgression };

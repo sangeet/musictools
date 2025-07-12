@@ -2,6 +2,7 @@
 import Link from "next/link";
 import React, { useEffect, useRef, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
+import { User } from "@supabase/supabase-js";
 
 function ToolsDropdown({ open, setOpen, dropdownRef }: { open: boolean, setOpen: (v: boolean) => void, dropdownRef: React.RefObject<HTMLDivElement> }) {
   useEffect(() => {
@@ -34,7 +35,7 @@ function ToolsDropdown({ open, setOpen, dropdownRef }: { open: boolean, setOpen:
   );
 }
 
-function UserDropdown({ user, open, setOpen }: { user: any, open: boolean, setOpen: (v: boolean) => void }) {
+function UserDropdown({ user, open, setOpen }: { user: User, open: boolean, setOpen: (v: boolean) => void }) {
   const dropdownRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!open) return;
@@ -77,8 +78,8 @@ const Header = () => {
   const [scrolled, setScrolled] = useState(false);
   const [toolsDropdownOpen, setToolsDropdownOpen] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
-  const [user, setUser] = useState<any>(null);
-  const toolsDropdownRef = useRef<HTMLDivElement>(null);
+  const [user, setUser] = useState<User | null>(null);
+  const toolsDropdownRef = useRef<HTMLDivElement>(null) as React.RefObject<HTMLDivElement>;
 
   useEffect(() => {
     const handleScroll = () => {

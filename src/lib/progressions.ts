@@ -110,4 +110,4 @@ const listProgressions: {
     },
 ];
 
-export { listProgressions }
+export { listProgressions, type ScaleRecommendation }
