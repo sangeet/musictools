@@ -1,22 +1,42 @@
 "use client";
 
 import { useState } from "react";
-import { allNotes, generateProgression, generateScale, NoteType } from "@/lib/chords";
+import { allNotes, allScales, generateProgression, generateScale, NoteType } from "@/lib/chords";
 import { listProgressions } from "../../../lib/progressions";
 import { KeyboardVisual } from "@/components/music/keyboard-visual";
 import { ChordProgressionSection } from "@/components/music/chord-progression";
 import Layout from "@/components/Layout";
 
+const allScaleOptions = Object.keys(allScales);
+
+function getScaleKeyFromLogic(logic: number[]): string | undefined {
+    return Object.entries(allScales).find(([k, v]) => JSON.stringify(v) === JSON.stringify(logic))?.[0];
+}
+
+function camelToTitle(str: string) {
+    return str.replace(/([A-Z])/g, ' $1').replace(/^./, s => s.toUpperCase());
+}
+
 const BluesPage = () => {
     const [selectedKey, setselectedKey] = useState<NoteType>("C");
-    const [selectedProgression, setSelectedProgression] = useState(listProgressions[0])
-    const progression = generateProgression(selectedProgression.progression, selectedKey)
+    const [selectedProgression, setSelectedProgression] = useState(listProgressions[0]);
+    const recommendedScaleKeys = selectedProgression.recommendedScales.map(s => getScaleKeyFromLogic(s.scale)).filter(Boolean) as string[];
+    const [selectedScales, setSelectedScales] = useState<string[]>(recommendedScaleKeys);
+    const progression = generateProgression(selectedProgression.progression, selectedKey);
     // Get unique chords by root and type
     const allChordsInProgression = progression
         .flat()
         .filter((chord, idx, arr) =>
             arr.findIndex(c => c.root === chord.root && c.type === chord.type) === idx
         );
+
+    function handleScaleToggle(scale: string) {
+        setSelectedScales(prev =>
+            prev.includes(scale)
+                ? prev.filter(s => s !== scale)
+                : [...prev, scale]
+        );
+    }
 
     return (
         <Layout>
@@ -48,31 +68,46 @@ const BluesPage = () => {
                 </div>
                 <div className="flex justify-center my-8">
                     <div className="flex flex-wrap sm:gap-16 w-full justify-center">
-                        {allChordsInProgression.map((chord, index) => {
-                            return <div
-                                key={`${chord.root}-${index}`}
-                            >
+                        {allChordsInProgression.map((chord, index) => (
+                            <div key={`${chord.root}-${index}`}>
                                 <KeyboardVisual highlightedNotes={chord.notes} width={150} />
                                 <span>{chord.symbol} ({chord.notes.join(" ")})</span>
-                            </div>;
-                        }
-                        )}
+                            </div>
+                        ))}
                     </div>
                 </div>
                 <ChordProgressionSection progresssion={progression} />
                 <div className="flex flex-col justify-center">
                     <h2 className="text-lg mb-2">Recommended Scales:</h2>
+
                     <div className="flex flex-wrap justify-around gap-5">
                         {
                             allChordsInProgression
                                 .map(chord => ([
-                                    selectedProgression.recommendedScales.map(sc => ({
-                                        name: `${chord.root} ${sc.name}`,
-                                        notes: generateScale(chord.root, sc.scale)
-                                    }))
+                                    selectedScales.map(scaleKey => {
+                                        const scaleLogic = allScales[scaleKey as keyof typeof allScales];
+                                        return {
+                                            name: `${chord.root} ${scaleKey}`,
+                                            notes: generateScale(chord.root, scaleLogic)
+                                        };
+                                    })
                                 ].flat())).flat()
                                 .map(scaleData => <ScaleRecommendation key={scaleData.name} {...scaleData} />)
                         }
+                    </div>
+                    <div className="flex flex-wrap gap-2 mt-4">
+                        {allScaleOptions.map(scale => (
+                            <button
+                                key={scale}
+                                className={`border-2 transition-colors duration-150 button
+                                    ${selectedScales.includes(scale) ? "button-selected" : ""}
+                                `}
+                                onClick={() => handleScaleToggle(scale)}
+                                aria-pressed={selectedScales.includes(scale)}
+                            >
+                                {camelToTitle(scale)}
+                            </button>
+                        ))}
                     </div>
                 </div>
             </div>
@@ -81,10 +116,13 @@ const BluesPage = () => {
 }
 
 const ScaleRecommendation = ({ name, notes }: { name: string, notes: NoteType[] }) => {
+    // Split name into root and scale, then format scale part
+    const [root, ...scaleParts] = name.split(" ");
+    const scaleName = camelToTitle(scaleParts.join(" "));
     return (
         <div className="flex flex-col">
             <KeyboardVisual highlightedNotes={notes} width={100} />
-            <span>{name}</span>
+            <span>{root} {scaleName}</span>
             <span>{notes.join(" ")}</span>
         </div>
     )

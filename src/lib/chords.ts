@@ -44,13 +44,13 @@ const locrian = [1, 2, 2, 1, 2, 2, 2];
 const wholeToneScale = [2, 2, 2, 2, 2, 2];
 const dorian = [2, 1, 2, 2, 2, 1, 2];
 
-type ScaleType = "major" | "minor" | "majorBluesScale" | "minorBluesScale" | "majorPentatonic" | "minorPentatonic" | "mixolydian" | "locrian" | "wholeTone";
+type ScaleType = "major" | "minor" | "majorBlues" | "minorBlues" | "majorPentatonic" | "minorPentatonic" | "mixolydian" | "locrian" | "wholeTone";
 
 const allScales: Record<ScaleType | "dorian", ScaleLogic> = {
     major: majorScaleLogic,
     minor: minorScaleLogic,
-    majorBluesScale: majorBluesScale,
-    minorBluesScale: minorBluesScale,
+    majorBlues: majorBluesScale,
+    minorBlues: minorBluesScale,
     majorPentatonic: majorPentatonic,
     minorPentatonic: minorPentatonic,
     mixolydian: mixolydian,

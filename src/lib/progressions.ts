@@ -50,7 +50,7 @@ type ScaleRecommendation = {
 const recommendedBluesScales: ScaleRecommendation[] = [
     {
         name: "Blues",
-        scale: allScales.minorBluesScale,
+        scale: allScales.minorBlues,
     },
     {
         name: "Mixolydian",
