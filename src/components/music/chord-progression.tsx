@@ -1,6 +1,6 @@
 "use client"
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { PlayIcon } from "@/components/icons/play";
 import { ChordProgression } from "@/lib/chords";
 import { StopIcon } from "@/components/icons/stop";
@@ -121,8 +121,30 @@ export const ChordProgressionSection = ({ progresssion }: { progresssion: ChordP
         });
     }
 
+    // Safari detection for metronome warning
+    const [isSafari, setIsSafari] = useState(false);
+    // Only run on client
+    useEffect(() => {
+        if (typeof window !== "undefined") {
+            const ua = window.navigator.userAgent;
+            setIsSafari(
+                /Safari/.test(ua) &&
+                !/Chrome/.test(ua) &&
+                !/Chromium/.test(ua) &&
+                !/Android/.test(ua)
+            );
+        }
+    }, []);
+
     return (
         <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-10">
+            <div className="w-full">
+                {isSafari && (
+                    <div className="text-yellow-700 dark:text-yellow-400 bg-yellow-100 dark:bg-yellow-900 border border-yellow-300 dark:border-yellow-700 rounded px-3 py-2 mb-2 text-sm text-center">
+                        Safari users: Please disable silent mode for metronome sound to work.
+                    </div>
+                )}
+            </div>
             <div className="flex flex-wrap sm:flex-col gap-3 sm:gap-5 items-center p-3 sm:p-8 rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
                 <div className="flex flex-wrap gap-2 items-center">
                     <label htmlFor="bpm-input">BPM:</label>
