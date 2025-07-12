@@ -1,36 +1,87 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Music Tools Web App
+
+A minimalist, web app for musicians, built with Next.js, React, and Tailwind CSS. This project provides interactive tools for music theory, practice, and composition.
+
+## Features & Tools
+
+- **Chord Progression Generator**: Select keys, generate jazz/blues/pop progressions, visualize chords, and use a built-in metronome. This was created when I had difficulties trying to stay in sync while playing certain blues chord progressions.
+
+## Tech Stack
+
+- **Next.js** (React framework)
+- **React** (UI library)
+- **Tailwind CSS** (utility-first CSS)
+- **Supabase** (authentication & database)
+- **TypeScript** (type safety)
 
 ## Getting Started
 
-First, run the development server:
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/sangeet/musictools.git
+   cd musictools
+   ```
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+2. **Install dependencies:**
+   ```bash
+   npm install
+   # or
+   yarn install
+   # or
+   pnpm install
+   # or
+   bun install
+   ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+3. **Set up environment variables:**
+   - Copy `.env.local.example` to `.env.local` (or use the provided `.env.local`).
+   - Add your Supabase project keys and database credentials.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+4. **Run the development server:**
+   ```bash
+   npm run dev
+   # or
+   yarn dev
+   # or
+   pnpm dev
+   # or
+   bun dev
+   ```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+5. **Open the app:**
+   - Visit [http://localhost:3000](http://localhost:3000) in your browser.
+
+## Supabase Setup
+
+To use authentication and save progressions, you need a [Supabase](https://supabase.com/) project:
+
+1. **Create a Supabase project:**
+   - Go to [supabase.com](https://supabase.com/) and sign up/log in.
+   - Click "New Project" and follow the instructions.
+
+2. **Get your API keys:**
+   - In your Supabase project dashboard, go to Project Settings > API.
+   - Copy the `Project URL` and `anon` public key.
+   - Add these to your `.env.local` file as `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
+
+3. **(Optional) Set up authentication and tables:**
+   - Enable email/password authentication in the Auth settings.
+   - Create tables for storing user data or custom progressions as needed.
+   - See [Supabase docs](https://supabase.com/docs) for details.
+
+4. **Restart your dev server** after updating `.env.local`.
+
+## Editing & Customization
+
+- Start editing the homepage by modifying `src/app/page.tsx`.
+- Tool pages and components are in `src/app/tools/` and `src/components/`.
 
 ## Learn More
 
-To learn more about Next.js, take a look at the following resources:
+- [Next.js Documentation](https://nextjs.org/docs)
+- [Supabase Documentation](https://supabase.com/docs)
+- [Tailwind CSS Documentation](https://tailwindcss.com/docs)
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Deploy
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Deploy easily on [Vercel](https://vercel.com/) or your preferred platform. See [Next.js deployment docs](https://nextjs.org/docs/app/building-your-application/deploying).
