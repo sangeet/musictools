@@ -94,8 +94,8 @@ const BluesPage = () => {
                         }}
                     />
                 )}
-                <div className="flex justify-center my-8">
-                    <div className="flex flex-wrap sm:gap-16 w-full justify-center">
+                <div className="flex justify-center my-4 sm:my-8">
+                    <div className="flex flex-wrap gap-5 sm:gap-16 w-full justify-center">
                         {allChordsInProgression.map((chord, index) => (
                             <div key={`${chord.root}-${index}`}>
                                 <KeyboardVisual highlightedNotes={chord.notes} width={150} />
@@ -151,7 +151,7 @@ const ScaleRecommendationSection = ({ name, notes }: { name: string, notes: Note
         <div className="flex flex-col">
             <KeyboardVisual highlightedNotes={notes} width={100} />
             <span>{root} {scaleName}</span>
-            <span>{notes.join(" ")}</span>
+            <span className="text-sm">{notes.join(" ")}</span>
         </div>
     )
 }

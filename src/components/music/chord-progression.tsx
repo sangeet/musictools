@@ -16,13 +16,13 @@ export const ChordProgressionSection = ({ progresssion }: { progresssion: ChordP
     const [bpm, setBpm] = useState(90);
     const timerDurationinMs = 1000 / (bpm / 60);
 
-    // --- Beep type state ---
-    const [beepType, setBeepType] = useState<"square" | "sine" | "triangle">("sine");
-
     // --- Count-in state ---
     const [countIn, setCountIn] = useState(false);
     const [countInBeat, setCountInBeat] = useState(0);
     const countInIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+    // --- Timer active state ---
+    const [timerActive, setTimerActive] = useState(false);
 
     // --- Web Audio API Metronome ---
     function playMetronome() {
@@ -36,11 +36,11 @@ export const ChordProgressionSection = ({ progresssion }: { progresssion: ChordP
             ctx.resume();
         }
 
-        // Oscillator beep (no click)
+        // Oscillator beep (always sine)
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
-        osc.type = beepType;
-        osc.frequency.value = beepType === "triangle" ? 800 : 1000;
+        osc.type = "sine";
+        osc.frequency.value = 1000;
         gain.gain.value = 0.18;
         osc.connect(gain);
         gain.connect(ctx.destination);
@@ -72,6 +72,7 @@ export const ChordProgressionSection = ({ progresssion }: { progresssion: ChordP
                 }
                 setCountIn(false);
                 setCountInBeat(0);
+                setTimerActive(true); // <-- Move here
                 startTimer();
             }
         }, timerDurationinMs);
@@ -82,13 +83,15 @@ export const ChordProgressionSection = ({ progresssion }: { progresssion: ChordP
         playMetronome();
         setTimeInterval(
             setInterval(increaseBeat, timerDurationinMs)
-        )
+        );
+        setTimerActive(true);
     }
 
     function resetTimer() {
         setBarState({ bar: 1, beat: 0 });
         setCountIn(false);
         setCountInBeat(0);
+        setTimerActive(false);
         if (timeInterval !== null) {
             globalThis.clearInterval(timeInterval);
             setTimeInterval(null);
@@ -119,8 +122,8 @@ export const ChordProgressionSection = ({ progresssion }: { progresssion: ChordP
     }
 
     return (
-        <div className="flex flex-wrap items-center justify-center gap-10">
-            <div className="flex flex-wrap sm:flex-col gap-5 items-center p-3 sm:p-8 rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
+        <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-10">
+            <div className="flex flex-wrap sm:flex-col gap-3 sm:gap-5 items-center p-3 sm:p-8 rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
                 <div className="flex flex-wrap gap-2 items-center">
                     <label htmlFor="bpm-input">BPM:</label>
                     <input
@@ -131,28 +134,14 @@ export const ChordProgressionSection = ({ progresssion }: { progresssion: ChordP
                         onChange={e => setBpm(parseInt(e.target.value))}
                     />
                 </div>
-                <div className="flex flex-wrap gap-2 items-center">
-                    <label htmlFor="beep-type" className="ml-2">Sound:</label>
-                    <select
-                        id="beep-type"
-                        className="button min-w-[120px] px-2 py-2"
-                        value={beepType}
-                        onChange={e => setBeepType(e.target.value as "square" | "sine" | "triangle")}
-                    >
-                        <option value="square">Square</option>
-                        <option value="sine">Sine</option>
-                        <option value="triangle">Triangle</option>
-                    </select>
-                </div>
                 <div className="flex gap-3 items-center">
                     <button onClick={startCountIn} disabled={countIn || timeInterval !== null} className="icon-button" aria-label="Play">
-                        <PlayIcon className="h-8 mx-auto" />
+                        <PlayIcon className="h-4 sm:h-8 mx-auto" />
                     </button>
                     <button onClick={resetTimer} className="icon-button" aria-label="Stop">
-                        <StopIcon className="h-8 mx-auto" />
+                        <StopIcon className="h-4 sm:h-8 mx-auto" />
                     </button>
                 </div>
-                {countIn && <span> {countInBeat < 4 ? `Count In: ${countInBeat + 1}` : ""} </span>}
             </div>
             <div className="flex flex-col gap-4 items-center text-center border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 rounded p-4">
                 {progresssion.map((lines, lineNum) => (
@@ -162,13 +151,14 @@ export const ChordProgressionSection = ({ progresssion }: { progresssion: ChordP
                     >
                         {lines.map((chord, index) => {
                             const bar = (lineNum * lines.length) + index + 1;
-                            const isCurrentBar = bar === barState.bar;
+                            // Only highlight if timerActive
+                            const isCurrentBar = timerActive && bar === barState.bar;
                             return <div
                                 onClick={() => {
                                     setBarState({ bar, beat: 0 });
                                 } }
                                 key={index}
-                                className={`w-12 text-2xl pt-1.5  ${isCurrentBar ? "bg-gray-200 dark:bg-gray-800" : "bg-white dark:bg-gray-900"} rounded transition-all duration-100 ease-in`}
+                                className={`w-12 text-2xl pt-1.5  ${isCurrentBar ? "bg-gray-100 dark:bg-gray-800" : "bg-white dark:bg-gray-900"} rounded transition-all duration-100 ease-in`}
                                 tabIndex={0}
                                 role="button"
                                 aria-label={`Bar ${bar}: ${chord.symbol}`}
@@ -178,7 +168,7 @@ export const ChordProgressionSection = ({ progresssion }: { progresssion: ChordP
                                     {[0, 1, 2, 3].map(beat =>
                                         <div
                                             key={`bar-${bar}-beat-${beat}`}
-                                            className={`w-full h-1 ${isCurrentBar && (barState.beat % beatsPerBar === beat) ? "bg-yellow-500" : "bg-gray-300 dark:bg-gray-700"} transition-all duration-100 ease-in`}
+                                            className={`w-full h-1 ${isCurrentBar && (timerActive && barState.beat % beatsPerBar === beat) ? "bg-red-500" : "bg-gray-300 dark:bg-gray-700"} transition-all duration-100 ease-in`}
                                         />)}
                                 </div>
                             </div>;
@@ -186,6 +176,9 @@ export const ChordProgressionSection = ({ progresssion }: { progresssion: ChordP
                         )}
                     </div>
                 ))}
+            </div>
+            <div className="dark:text-yellow-500 text-red-500 w-full text-lg md:text-xl text-center">
+                {countIn && <span> {countInBeat < 4 ? `Count In: ${countInBeat + 1}` : ""} </span>}
             </div>
         </div>
     )

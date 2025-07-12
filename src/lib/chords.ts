@@ -1,5 +1,8 @@
 type NoteType = "C" | "Db" | "D" | "Eb" | "E" | "F" | "Gb" | "G" | "Ab" | "A" | "Bb" | "B";
-type ChordType = "major" | "minor" | "dominant" | "diminished" | "augmented" | "sus4" | "sus2" | "sixth" | "maj7" | "ninth" | "eleventh" | "thirteenth" | "add9" | "add11" | "add13";
+const allChordTypes = [
+  "major", "minor", "dominant", "diminished", "augmented", "sus4", "sus2", "sixth", "maj7", "ninth", "eleventh", "thirteenth", "add9", "add11", "add13", "m7", "m9", "m11", "m13"
+];
+export type ChordType = typeof allChordTypes[number];
 type Scale = NoteType[];
 
 type ChordProgreessionReference = ChordNumberReference[][];
@@ -78,6 +81,10 @@ const allChordLogic: Record<ChordType, ChordLogic> = {
     add9: { logic: [1, 3, 5, 9], scaleLogic: allScales.major, suffix: "add9" },
     add11: { logic: [1, 3, 5, 11], scaleLogic: allScales.major, suffix: "add11" },
     add13: { logic: [1, 3, 5, 13], scaleLogic: allScales.major, suffix: "add13" },
+    m7: { logic: [1, 3, 5, 7], scaleLogic: allScales.minor, suffix: "m7" },
+    m9: { logic: [1, 3, 5, 7, 9], scaleLogic: allScales.minor, suffix: "m9" },
+    m11: { logic: [1, 3, 5, 7, 9, 11], scaleLogic: allScales.minor, suffix: "m11" },
+    m13: { logic: [1, 3, 5, 7, 9, 11, 13], scaleLogic: allScales.minor, suffix: "m13" } 
 }
 
 function generateScale(rootNote: NoteType, scaleLogic: ScaleLogic): NoteType[] {
@@ -154,5 +161,5 @@ function generateChords(rootNote: NoteType): Record<ChordType, Chord> {
 }
 
 export { generateScales, generateChords, generateProgression, generateScale, generateChordFromReference };
-export { allScales, allNotes, majorScaleLogic, minorScaleLogic, majorChordLogic, minorChordLogic, type ScaleLogic };
-export { type ChordProgreessionReference, type ChordNumberReference, type Scale, type ChordType, type Chord, type NoteType, type ChordProgression };
+export { allScales, allNotes, majorScaleLogic, minorScaleLogic, majorChordLogic, minorChordLogic, allChordTypes };
+    export { type ChordProgreessionReference, type ChordNumberReference, type Scale, type Chord, type NoteType, type ChordProgression, type ScaleLogic };

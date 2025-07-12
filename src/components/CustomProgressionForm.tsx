@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { allNotes, ChordType, NoteType, ChordProgreessionReference, ChordNumberReference, generateChordFromReference } from "@/lib/chords";
+import { allNotes, ChordType, NoteType, ChordProgreessionReference, ChordNumberReference, generateChordFromReference, allChordTypes } from "@/lib/chords";
 
 // Chord slot type for visual builder
 interface ChordSlot {
@@ -16,7 +16,7 @@ export default function CustomProgressionForm({ onClose, onAdd }: {
 }) {
   const defaultRow: ChordRow = [
     { number: 1, type: "major" },
-    { number: 4, type: "major" },
+    { number: 6, type: "major" },
     { number: 5, type: "major" },
     { number: 1, type: "major" },
   ];
@@ -93,17 +93,20 @@ export default function CustomProgressionForm({ onClose, onAdd }: {
         onChange={e => setName(e.target.value)}
         required
       />
-      <div className="flex gap-2 items-center">
-        <label className="text-sm">Root Note:</label>
-        <select className="button" value={rootNote} onChange={e => setRootNote(e.target.value as NoteType)}>
-          {allNotes.map(n => <option key={n} value={n}>{n}</option>)}
-        </select>
-      </div>
-      <div className="flex flex-col gap-4">
+      <div className="flex gap-4 items-center">
+        <div className="flex gap-2 items-center">
+          <label className="text-sm">Preview Root Note:</label>
+          <select className="button" value={rootNote} onChange={e => setRootNote(e.target.value as NoteType)}>
+            {allNotes.map(n => <option key={n} value={n}>{n}</option>)}
+          </select>
+        </div>
+
         <div className="flex gap-2 items-center">
           <span className="text-sm font-semibold">Progression Rows:</span>
           <button type="button" className="button px-2 py-1 text-xs" onClick={handleAddRow}>+ Add Row</button>
         </div>
+      </div>
+      <div className="flex flex-col gap-4">
         {rows.map((row, rowIdx) => (
           <div key={rowIdx} className="flex flex-col gap-2 border rounded p-2 bg-gray-100 dark:bg-gray-800">
             <div className="flex gap-2 items-center mb-1">
@@ -113,14 +116,14 @@ export default function CustomProgressionForm({ onClose, onAdd }: {
             </div>
             <div className="flex gap-2 flex-wrap">
               {row.map((slot, slotIdx) => (
-                <div key={slotIdx} className="flex flex-col items-center gap-1 border rounded p-2 bg-gray-200 dark:bg-gray-700">
+                <div key={slotIdx} className="flex items-center gap-1 border rounded p-2 bg-gray-200 dark:bg-gray-700">
                   <select className="button" value={slot.number} onChange={e => handleSlotChange(rowIdx, slotIdx, "number", Number(e.target.value))}>
-                    {[1,2,3,4,5,6,7].map(n => <option key={n} value={n}>{n}</option>)}
+                    {[1, 2, 3, 4, 5, 6, 7].map(n => <option key={n} value={n}>{n}</option>)}
                   </select>
                   <select className="button" value={slot.type} onChange={e => handleSlotChange(rowIdx, slotIdx, "type", e.target.value as ChordType)}>
-                    {["major","minor","dominant","diminished","augmented","sus4","sus2","sixth","maj7","ninth","eleventh","thirteenth","add9","add11","add13"].map(t => <option key={t} value={t}>{t}</option>)}
+                    {allChordTypes.map(t => <option key={t} value={t}>{t}</option>)}
                   </select>
-                  <button type="button" className="button px-2 py-1 text-xs" onClick={() => handleRemoveSlot(rowIdx, slotIdx)} disabled={row.length <= 1}>Remove</button>
+                  <button type="button" className="button px-2 py-1 text-xs" onClick={() => handleRemoveSlot(rowIdx, slotIdx)} disabled={row.length <= 1}>X</button>
                 </div>
               ))}
             </div>
