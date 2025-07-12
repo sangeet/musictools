@@ -36,7 +36,7 @@ const CardsGrid = () => {
 
   return (
     <div className="flex flex-wrap gap-8 w-full">
-      {tools.map((tool, idx) => (
+      {tools.map((tool) => (
         <Link href={tool.href} className="group" key={tool.title}>
           <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-sm overflow-hidden flex flex-col items-center transition hover:shadow-lg max-w-[320px] w-full mx-auto">
             <div className="w-full flex justify-center mb-4">
