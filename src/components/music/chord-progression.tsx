@@ -2,15 +2,16 @@
 
 import { useRef, useState } from "react";
 import { PlayIcon } from "@/components/icons/play";
-import { ChordProgression, Scale } from "@/lib/chords";
+import { ChordProgression } from "@/lib/chords";
 import { StopIcon } from "@/components/icons/stop";
 
 export const ChordProgressionSection = ({ progresssion }: { progresssion: ChordProgression}) => {
     const numBars = progresssion.flat().length
     const beatsPerBar = 4;
-    const [barState, setBarState] = useState({ bar: 1, beat: 0 });
+    const [barState, setBarState] = useState<{ bar: number; beat: number }>({ bar: 1, beat: 0 });
 
-    const [timeInterval, setTimeInterval] = useState<NodeJS.Timer | null>(null);
+    // Use ReturnType<typeof setInterval> for timer types
+    const [timeInterval, setTimeInterval] = useState<ReturnType<typeof setInterval> | null>(null);
     const audioCtxRef = useRef<AudioContext | null>(null); // <-- AudioContext for metronome
     const [bpm, setBpm] = useState(90);
     const timerDurationinMs = 1000 / (bpm / 60);
@@ -21,12 +22,12 @@ export const ChordProgressionSection = ({ progresssion }: { progresssion: ChordP
     // --- Count-in state ---
     const [countIn, setCountIn] = useState(false);
     const [countInBeat, setCountInBeat] = useState(0);
-    const countInIntervalRef = useRef<NodeJS.Timer | null>(null);
+    const countInIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
     // --- Web Audio API Metronome ---
     function playMetronome() {
         if (!audioCtxRef.current) {
-            audioCtxRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+            audioCtxRef.current = new (window.AudioContext || (window as typeof window & { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
         }
         const ctx = audioCtxRef.current;
         if (!ctx) return;
@@ -55,7 +56,7 @@ export const ChordProgressionSection = ({ progresssion }: { progresssion: ChordP
     function startCountIn() {
         setCountIn(true);
         setCountInBeat(0);
-        if (countInIntervalRef.current) clearInterval(countInIntervalRef.current as any);
+        if (countInIntervalRef.current) clearInterval(countInIntervalRef.current);
 
         let localCount = 0;
         playMetronome();
@@ -66,7 +67,7 @@ export const ChordProgressionSection = ({ progresssion }: { progresssion: ChordP
             if (localCount >= 4) {
                 // Clear count-in timer BEFORE starting main timer
                 if (countInIntervalRef.current) {
-                    globalThis.clearInterval(countInIntervalRef.current as any);
+                    globalThis.clearInterval(countInIntervalRef.current);
                     countInIntervalRef.current = null;
                 }
                 setCountIn(false);
@@ -89,11 +90,11 @@ export const ChordProgressionSection = ({ progresssion }: { progresssion: ChordP
         setCountIn(false);
         setCountInBeat(0);
         if (timeInterval !== null) {
-            globalThis.clearInterval(timeInterval as any);
+            globalThis.clearInterval(timeInterval);
             setTimeInterval(null);
         }
         if (countInIntervalRef.current) {
-            globalThis.clearInterval(countInIntervalRef.current as any);
+            globalThis.clearInterval(countInIntervalRef.current);
             countInIntervalRef.current = null;
         }
         if (audioCtxRef.current && audioCtxRef.current.state === "running") {
@@ -136,7 +137,7 @@ export const ChordProgressionSection = ({ progresssion }: { progresssion: ChordP
                         id="beep-type"
                         className="button min-w-[120px] px-2 py-2"
                         value={beepType}
-                        onChange={e => setBeepType(e.target.value as any)}
+                        onChange={e => setBeepType(e.target.value as "square" | "sine" | "triangle")}
                     >
                         <option value="square">Square</option>
                         <option value="sine">Sine</option>
@@ -144,10 +145,10 @@ export const ChordProgressionSection = ({ progresssion }: { progresssion: ChordP
                     </select>
                 </div>
                 <div className="flex gap-3 items-center">
-                    <button onClick={startCountIn} disabled={countIn || timeInterval !== null} className="icon-button" >
+                    <button onClick={startCountIn} disabled={countIn || timeInterval !== null} className="icon-button" aria-label="Play">
                         <PlayIcon className="h-8 mx-auto" />
                     </button>
-                    <button onClick={resetTimer} className="icon-button" >
+                    <button onClick={resetTimer} className="icon-button" aria-label="Stop">
                         <StopIcon className="h-8 mx-auto" />
                     </button>
                 </div>
@@ -168,12 +169,15 @@ export const ChordProgressionSection = ({ progresssion }: { progresssion: ChordP
                                 } }
                                 key={index}
                                 className={`w-12 text-2xl pt-1.5  ${isCurrentBar ? "bg-gray-200 dark:bg-gray-800" : "bg-white dark:bg-gray-900"} rounded transition-all duration-100 ease-in`}
+                                tabIndex={0}
+                                role="button"
+                                aria-label={`Bar ${bar}: ${chord.symbol}`}
                             >
                                 <span>{chord.symbol}</span>
                                 <div className="flex gap-1 justify-between mt-1">
                                     {[0, 1, 2, 3].map(beat =>
                                         <div
-                                            key={`bar-${bar}`}
+                                            key={`bar-${bar}-beat-${beat}`}
                                             className={`w-full h-1 ${isCurrentBar && (barState.beat % beatsPerBar === beat) ? "bg-yellow-500" : "bg-gray-300 dark:bg-gray-700"} transition-all duration-100 ease-in`}
                                         />)}
                                 </div>

@@ -1,8 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Header from "@/components/Header";
-import Footer from "@/components/Footer";
 import { allNotes, generateProgression, generateScale, NoteType } from "@/lib/chords";
 import { listProgressions } from "../../../lib/progressions";
 import { KeyboardVisual } from "@/components/music/keyboard-visual";
@@ -12,7 +10,6 @@ import Layout from "@/components/Layout";
 const BluesPage = () => {
     const [selectedKey, setselectedKey] = useState<NoteType>("C");
     const [selectedProgression, setSelectedProgression] = useState(listProgressions[0])
-    const [dropdownOpen, setDropdownOpen] = useState(false);
     const progression = generateProgression(selectedProgression.progression, selectedKey)
     // Get unique chords by root and type
     const allChordsInProgression = progression

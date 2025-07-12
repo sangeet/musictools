@@ -1,4 +1,4 @@
-import { allScales, ChordProgreessionReference, Scale, ScaleLogic } from "./chords";
+import { allScales, ChordProgreessionReference, ScaleLogic } from "./chords";
 
 const twelveBarBluesProgression: ChordProgreessionReference = [
     [{ number: 1, type: "dominant" }, { number: 1, type: "dominant" }, { number: 1, type: "dominant" }, { number: 1, type: "dominant" }],
@@ -22,15 +22,6 @@ const twelveBarQuickChangeFiveTurnaround: ChordProgreessionReference = [
     [{ number: 1, type: "major" }, { number: 4, type: "major" }, { number: 1, type: "major" }, { number: 1, type: "major" }],
     [{ number: 4, type: "major" }, { number: 4, type: "major" }, { number: 1, type: "major" }, { number: 1, type: "major" }],
     [{ number: 5, type: "major" }, { number: 4, type: "major" }, { number: 1, type: "major" }, { number: 5, type: "major" }],
-];
-
-const majorMinorMixTest: ChordProgreessionReference = [
-    [
-        { number: 1, type: "major" },
-        { number: 5, type: "major" },
-        { number: 6, type: "minor" },
-        { number: 4, type: "major" },
-    ]
 ];
 
 const jazzTwoFiveOne: ChordProgreessionReference = [

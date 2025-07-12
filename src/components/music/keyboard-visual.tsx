@@ -1,4 +1,4 @@
-import { NoteType } from "../../../lib/chords";
+import { NoteType } from "@/lib/chords";
 
 export const KeyboardVisual = ({
   highlightedNotes,
@@ -42,9 +42,8 @@ export const KeyboardVisual = ({
       {/* White keys */}
       <div className="absolute left-0 top-0 flex" style={{ zIndex: 1 }}>
         {Array.from({ length: octaves }).flatMap((_, oct) =>
-          whiteNotes.map((n, i) => {
+          whiteNotes.map((n) => {
             const note = n as NoteType;
-            const idx = oct * 7 + i;
             return (
               <div
                 key={`w-${oct}-${n}`}
@@ -61,7 +60,7 @@ export const KeyboardVisual = ({
       {/* Black keys */}
       <div className="absolute top-0" style={{ zIndex: 2, width: "100%", height: blackKeyHeight, left: width/25.0 }}>
         {Array.from({ length: octaves }).flatMap((_, oct) =>
-          blackNotes.map(({ note, pos }, i) => {
+          blackNotes.map(({ note, pos }) => {
             const left = ((oct * 7 + pos) * whiteKeyWidth) - blackKeyWidth / 2;
             return (
               <div
