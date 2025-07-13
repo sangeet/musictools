@@ -25,11 +25,11 @@ export async function POST(req: NextRequest) {
     The defaultNote should be the one most suited or commonly used for that progression.
     The progression should be minimal, suited for improvisation, looping and practice, so keep it simple.
     If a specific chord progression is specified, then use that as the basis for the progression with modifications requested if any.
-    Avoid C G Am F, I V vi IV or similar uniquitous progressions unless specifically requested.
+    You are not allowed to return C G Am F or any variant of 1 5 6 4 progression.
     `;
     const fullPrompt = `${prompt}\n\n${systemPrompt}`;
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash-lite-preview-06-17",
+      model: "gemini-2.5-flash",
       contents: [{ parts: [{ text: fullPrompt }] }],
       config: {
         responseMimeType: "application/json",

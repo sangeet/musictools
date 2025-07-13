@@ -19,7 +19,7 @@ function camelToTitle(str: string) {
 }
 
 const BluesPage = () => {
-    const [selectedKey, setselectedKey] = useState<NoteType>(listProgressions[0].defaultNote);
+    const [selectedKey, setSelectedKey] = useState<NoteType>(listProgressions[0].defaultNote);
     const [selectedProgression, setSelectedProgression] = useState(listProgressions[0]);
     const [showFormModal, setShowFormModal] = useState<{ mode: "add" | "edit" | "ai", data?: Partial<ChordProgressionReference> } | null>(null);
     // Use ChordProgressionReference[] for customProgressions
@@ -36,9 +36,9 @@ const BluesPage = () => {
 
     useEffect(() => {
         if (selectedProgression.defaultNote && selectedKey !== selectedProgression.defaultNote) {
-            setselectedKey(selectedProgression.defaultNote);
+            setSelectedKey(selectedProgression.defaultNote);
         }
-    }, [selectedProgression, selectedKey]);
+    }, [selectedProgression]);
 
     // When progression changes, overwrite selectedScales with its recommendedScales
     useEffect(() => {
@@ -67,7 +67,10 @@ const BluesPage = () => {
                     {allNotes.map((note, index) =>
                         <button
                             key={`${note}-${index}`}
-                            onClick={() => setselectedKey(note)}
+                            onClick={() => {
+                                console.log('Key selected:', note);
+                                setSelectedKey(note);
+                            }}
                             className={`button border-2 transition-colors duration-150
                                 ${note === selectedKey ? "button-selected" : ""}
                             `}
