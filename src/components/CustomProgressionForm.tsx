@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { allNotes, ChordType, NoteType, ChordProgreessionReference, ChordNumberReference, generateChordFromReference, allChordTypes } from "@/lib/chords";
 
 // Chord slot type for visual builder
@@ -26,6 +26,10 @@ export default function CustomProgressionForm({ onClose, onAdd }: {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+  const [aiPrompt, setAiPrompt] = useState("");
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState("");
+  const [aiResult, setAiResult] = useState<string>("");
 
   function handleSlotChange(rowIdx: number, slotIdx: number, field: keyof ChordNumberReference, value: number | ChordType) {
     setRows(rows => rows.map((row, i) =>
@@ -81,6 +85,54 @@ export default function CustomProgressionForm({ onClose, onAdd }: {
       }
     })
   );
+
+  async function handleAskAI() {
+    setAiLoading(true);
+    setAiError("");
+    setAiResult("");
+    try {
+      const res = await fetch("/api/gemini", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt: aiPrompt })
+      });
+      if (!res.ok) throw new Error("API error");
+      const data = await res.json();
+      console.log(data);
+      // Robust parsing: try to extract progression from various formats
+      let progression: ChordNumberReference[][] | null = null;
+      let recommendedScales: ChordNumberReference[] = [];
+      // Try JSON
+      if (typeof data.result === "string") {
+        try {
+          const json = JSON.parse(data.result);
+          if (Array.isArray(json.progression)) progression = json.progression;
+          if (Array.isArray(json.recommendedScales)) recommendedScales = json.recommendedScales;
+        } catch {
+          // Try to parse as text: e.g. "Cmaj7 | Dm7 | G7 | Cmaj7"
+          const text = data.result.trim();
+          const chords = text.split(/\s*\|\s*/);
+          if (chords.length > 1) {
+            progression = [chords.map((ch: string) => {
+              // Simple parser: extract degree and type
+              const match = ch.match(/([A-G][b#]?)(m|maj|min|dim|aug|7|m7|maj7)?/i);
+              return { number: 1, type: "major" };
+            })];
+          }
+        }
+      }
+      if (progression) {
+        setAiResult("Success! Click 'Add' to use this progression.");
+        setRows(progression);
+      } else {
+        setAiError("Could not parse AI response. Try a different prompt.");
+      }
+    } catch (err: any) {
+      setAiError(err.message || "Unknown error");
+    } finally {
+      setAiLoading(false);
+    }
+  }
 
   return (
     <form className="flex flex-col gap-4 p-4 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-900 w-full mx-auto mt-4" onSubmit={handleSubmit}>
@@ -142,6 +194,23 @@ export default function CustomProgressionForm({ onClose, onAdd }: {
       </div>
       {error && <div className="text-red-500 text-sm">{error}</div>}
       {success && <div className="text-green-600 text-sm">Saved!</div>}
+      <div className="flex flex-col gap-2 mt-2">
+        <label className="font-semibold text-sm">AI Chord Progression Recommendation</label>
+        <textarea
+          className="button w-full"
+          rows={2}
+          placeholder="Describe the style, mood, or progression you want..."
+          value={aiPrompt}
+          onChange={e => setAiPrompt(e.target.value)}
+          disabled={aiLoading}
+        />
+        <button className="button w-full" onClick={handleAskAI} type="button" disabled={aiLoading || !aiPrompt}>
+          {aiLoading ? "Loading..." : "Ask AI"}
+        </button>
+        {aiError && <div className="text-red-500 text-sm">{aiError}</div>}
+        {aiResult && <div className="text-green-600 text-sm">{aiResult}</div>}
+        <div className="text-xs text-gray-500">AI results may require manual adjustment. Parsing is experimental.</div>
+      </div>
       <div className="flex gap-2">
         <button type="submit" className="button" disabled={loading}>{loading ? "Saving..." : "Save"}</button>
         <button type="button" className="button" onClick={onClose}>Cancel</button>
