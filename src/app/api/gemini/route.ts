@@ -1,6 +1,6 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { NextRequest } from 'next/server';
-import { allChordTypes } from "@/lib/chords";
+import { allChordTypes, allScaleTypes, allNoteTypes } from "@/types/music";
 
 export async function POST(req: NextRequest) {
   const { prompt } = await req.json();
@@ -13,31 +13,32 @@ export async function POST(req: NextRequest) {
     // Minimal instructions for reliable output
     const systemPrompt = `Return a JSON object with this exact structure:
 {
+  "name": string,
+  "defaultNote": one of [${allNoteTypes.join(", ")}],
+  "description": string,
   "progression": [
-    [
-      { "number": 1-7, "type": one of [${allChordTypes.join(", ")}] },
-      ...
-    ],
-    ...
-  ]
-}
-- Only use integer values from 1 to 7 for 'number'.
-- Always include both 'number' and 'type' in every chord object.
-- Avoid ultra-popular progressions like CGAF (1 5 6 4) unless the prompt specifically asks for them.`;
+    Prefer progressions with more chords per line (horizontal), and fewer lines (vertical).
+    Each line should represent a musical phrase or bar, and should contain multiple chords (ideally 3-6 per line).
+    Avoid progressions where each line contains only one chord.
+    Only use integer values from 1 to 7 for 'number'.
+    Include all specified fields in response. No field should be omitted.
+    The defaultNote should be the one most suited or commonly used for that progression.
+    The progression should be minimal, suited for improvisation, looping and practice, so keep it simple.
+    If a specific chord progression is specified, then use that as the basis for the progression with modifications requested if any.
+    Avoid C G Am F, I V vi IV or similar uniquitous progressions unless specifically requested.
+    `;
     const fullPrompt = `${prompt}\n\n${systemPrompt}`;
-    // Log token count for prompt
-    // const countTokensResponse = await ai.models.countTokens({
-    //   model: "gemini-2.5-flash",
-    //   contents: fullPrompt
-    // });
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-2.5-flash-lite-preview-06-17",
       contents: [{ parts: [{ text: fullPrompt }] }],
       config: {
         responseMimeType: "application/json",
         responseSchema: {
           type: Type.OBJECT,
           properties: {
+            name: { type: Type.STRING },
+            defaultNote: { type: Type.STRING, enum: allNoteTypes },
+            description: { type: Type.STRING },
             progression: {
               type: Type.ARRAY,
               items: {
@@ -45,15 +46,28 @@ export async function POST(req: NextRequest) {
                 items: {
                   type: Type.OBJECT,
                   properties: {
-                    number: { type: Type.NUMBER },
+                    number: { type: Type.INTEGER, minimum: 1, maximum: 7 },
                     type: { type: Type.STRING, enum: allChordTypes }
                   },
+                  required: ["number", "type"],
                   propertyOrdering: ["number", "type"]
                 }
               }
+            },
+            recommendedScales: {
+              type: Type.ARRAY,
+              items: {
+                type: Type.OBJECT,
+                properties: {
+                  scale: { type: Type.STRING, enum: allScaleTypes }
+                },
+                required: ["scale"],
+                propertyOrdering: ["scale"]
+              }
             }
           },
-          propertyOrdering: ["progression"]
+          required: ["name", "defaultNote", "description", "progression", "recommendedScales"],
+          propertyOrdering: ["name", "defaultNote", "description", "progression", "recommendedScales"]
         }
       }
     });

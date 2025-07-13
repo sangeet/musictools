@@ -1,4 +1,4 @@
-import { NoteType } from "@/lib/chords";
+import { NoteType } from "@/types/music";
 
 export const KeyboardVisual = ({
   highlightedNotes,
