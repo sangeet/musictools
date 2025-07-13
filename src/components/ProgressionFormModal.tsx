@@ -1,41 +1,37 @@
 // This file is now deprecated and replaced by AddProgressionForm, EditProgressionForm, and AIProgressionForm.
-// If you need to restore any logic, see backup/CustomProgressionForm.tsx.
+// If you need to restore any logic, see backup/ProgressionFormModal.tsx.
 
-"use client";
 import { useState } from "react";
-import { generateChordFromReference } from "@/lib/chords";
 import { allNoteTypes, allChordTypes, ChordType, NoteType } from "@/types/music";
-import { ChordProgressionReference, ChordNumberReference } from "@/types/progression";
+import { ChordProgressionReference, ChordNumberReference, ScaleRecommendation } from "@/types/progression";
+import { generateChordFromReference } from "@/lib/chords";
 
-// Chord slot type for visual builder
-interface ChordSlot {
-  number: number; // 1-7 (degree in scale)
-  type: ChordType;
+export type ProgressionFormMode = "add" | "edit" | "ai";
+
+interface ProgressionFormModalProps {
+  mode: ProgressionFormMode;
+  initialData?: Partial<ChordProgressionReference>;
+  onSave: (prog: ChordProgressionReference) => void;
+  onClose: () => void;
 }
 
-type ChordRow = ChordSlot[];
-
-export default function CustomProgressionForm({ onClose, onAdd }: {
-  onClose: () => void,
-  onAdd?: (prog: ChordProgressionReference) => void,
-}) {
-  const defaultRow: ChordRow = [
+export default function ProgressionFormModal({ mode, initialData, onSave, onClose }: ProgressionFormModalProps) {
+  const defaultRow: ChordNumberReference[] = [
     { number: 1, type: "major" },
     { number: 6, type: "major" },
     { number: 5, type: "major" },
     { number: 1, type: "major" },
   ];
-  const [name, setName] = useState("");
-  const [description, setDescription] = useState("Custom progression");
-  const [rows, setRows] = useState<ChordNumberReference[][]>([defaultRow]);
-  const [rootNote, setRootNote] = useState<NoteType>("C");
+  const [name, setName] = useState(initialData?.name ?? "");
+  const [description, setDescription] = useState(initialData?.description ?? "");
+  const [rows, setRows] = useState<ChordNumberReference[][]>(initialData?.progression as ChordNumberReference[][] ?? [defaultRow]);
+  const [rootNote, setRootNote] = useState<NoteType>(initialData?.defaultNote ?? "C");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
   const [aiPrompt, setAiPrompt] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState("");
-  const [aiResult, setAiResult] = useState<string>("");
 
   function handleSlotChange(rowIdx: number, slotIdx: number, field: keyof ChordNumberReference, value: number | ChordType) {
     setRows(rows => rows.map((row, i) =>
@@ -56,9 +52,7 @@ export default function CustomProgressionForm({ onClose, onAdd }: {
   }
 
   function handleAddRow() {
-    setRows(rows => [...rows, [
-      { number: 1, type: "major" }
-    ]]);
+    setRows(rows => [...rows, [ { number: 1, type: "major" } ]]);
   }
 
   function handleRemoveRow(rowIdx: number) {
@@ -74,20 +68,14 @@ export default function CustomProgressionForm({ onClose, onAdd }: {
       name,
       defaultNote: rootNote,
       description,
-      source: "custom",
+      source: mode === "edit" ? "custom" : "custom",
       creationDate: Date.now(),
       progression: rows.map(row => row.map(slot => ({ number: slot.number, type: slot.type }))),
       recommendedScales: []
     };
-    if (onAdd) {
-      onAdd(progressionObj);
-    }
+    onSave(progressionObj);
     setLoading(false);
     setSuccess(true);
-    setName("");
-    setDescription("Custom progression");
-    setRows([defaultRow]);
-    setRootNote("C");
     setTimeout(onClose, 1200);
   }
 
@@ -102,11 +90,9 @@ export default function CustomProgressionForm({ onClose, onAdd }: {
     })
   );
 
-  // When AI data is received, update form fields accordingly
   async function handleAskAI() {
     setAiLoading(true);
     setAiError("");
-    setAiResult("");
     try {
       const res = await fetch("/api/gemini", {
         method: "POST",
@@ -115,29 +101,45 @@ export default function CustomProgressionForm({ onClose, onAdd }: {
       });
       if (!res.ok) throw new Error("API error");
       const data = await res.json();
+      console.log("Gemini API response:", data);
       let progression: ChordNumberReference[][] | null = null;
+      let aiName = "AI Progression";
+      let aiDescription  = "";
+      let aiDefaultNote: NoteType = "C";
+      let aiRecommendedScales: ScaleRecommendation[] = [];
       if (typeof data.result === "string") {
         try {
           const json = JSON.parse(data.result);
           if (Array.isArray(json.progression)) progression = json.progression;
-          if (json.name) setName(json.name);
-          if (json.description) setDescription(json.description);
-          if (json.defaultNote) setRootNote(json.defaultNote as NoteType);
-        } catch {
-          // Try to parse as text: e.g. "Cmaj7 | Dm7 | G7 | Cmaj7"
-          const text = data.result.trim();
-          const chords = text.split(/\s*\|\s*/);
-          if (chords.length > 1) {
-            progression = [chords.map(() => {
-              // Simple parser: extract degree and type
-              return { number: 1, type: "major" };
-            })];
+          if (json.name) aiName = json.name;
+          if (json.description) aiDescription = json.description;
+          if (json.defaultNote) aiDefaultNote = json.defaultNote as NoteType;
+          if (Array.isArray(json.recommendedScales)) {
+            aiRecommendedScales = json.recommendedScales.filter(
+              (s: unknown): s is ScaleRecommendation => typeof s === "object" && s !== null && "scale" in s && typeof (s as ScaleRecommendation).scale === "string"
+            );
           }
+        } catch {
+          // fallback parsing
         }
       }
       if (progression) {
-        setAiResult("Success! Click 'Add' to use this progression.");
-        setRows(progression);
+        setName(aiName);
+        setDescription(aiDescription);
+        setRootNote(aiDefaultNote);
+        // Optionally handle recommendedScales in form state if you want to allow editing
+        const progressionObj: ChordProgressionReference = {
+          name: aiName,
+          defaultNote: aiDefaultNote,
+          description: aiDescription,
+          source: "ai",
+          creationDate: Date.now(),
+          progression,
+          recommendedScales: aiRecommendedScales
+        };
+        onSave(progressionObj); // auto-save
+        setSuccess(true);
+        setTimeout(onClose, 1200);
       } else {
         setAiError("Could not parse AI response. Try a different prompt.");
       }
@@ -148,6 +150,30 @@ export default function CustomProgressionForm({ onClose, onAdd }: {
     }
   }
 
+  if (mode === "ai") {
+    return (
+      <div className="flex flex-col gap-4 p-4 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-900 w-full mx-auto mt-4">
+        <label className="font-semibold text-sm">AI Chord Progression Recommendation</label>
+        <input
+          className="button w-full"
+          type="text"
+          placeholder="Describe the style, mood, or progression you want..."
+          value={aiPrompt}
+          onChange={e => setAiPrompt(e.target.value)}
+          disabled={aiLoading}
+        />
+        <button className="button w-full" onClick={handleAskAI} type="button" disabled={aiLoading || !aiPrompt}>
+          {aiLoading ? "Loading..." : "Ask AI"}
+        </button>
+        {aiError && <div className="text-red-500 text-sm">{aiError}</div>}
+        {success && <div className="text-green-600 text-sm">Saved!</div>}
+        <div className="text-xs text-gray-500">AI results are auto-saved. You can edit them later.</div>
+        <button type="button" className="button" onClick={onClose}>Close</button>
+      </div>
+    );
+  }
+
+  // Add/Edit form
   return (
     <form className="flex flex-col gap-4 p-4 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-900 w-full mx-auto mt-4" onSubmit={handleSubmit}>
       <input
@@ -160,7 +186,7 @@ export default function CustomProgressionForm({ onClose, onAdd }: {
       />
       <textarea
         className="button w-full"
-        placeholder="Description"
+        placeholder="Describe your progression, style, or mood..."
         value={description}
         onChange={e => setDescription(e.target.value)}
         rows={2}
@@ -182,7 +208,6 @@ export default function CustomProgressionForm({ onClose, onAdd }: {
             ))}
           </div>
         </div>
-
         <div className="flex gap-2 items-center">
           <span className="text-sm font-semibold">Progression Rows:</span>
           <button type="button" className="button px-2 py-1 text-xs" onClick={handleAddRow}>+ Add Row</button>
@@ -224,25 +249,8 @@ export default function CustomProgressionForm({ onClose, onAdd }: {
       </div>
       {error && <div className="text-red-500 text-sm">{error}</div>}
       {success && <div className="text-green-600 text-sm">Saved!</div>}
-      <div className="flex flex-col gap-2 mt-2">
-        <label className="font-semibold text-sm">AI Chord Progression Recommendation</label>
-        <textarea
-          className="button w-full"
-          rows={2}
-          placeholder="Describe the style, mood, or progression you want..."
-          value={aiPrompt}
-          onChange={e => setAiPrompt(e.target.value)}
-          disabled={aiLoading}
-        />
-        <button className="button w-full" onClick={handleAskAI} type="button" disabled={aiLoading || !aiPrompt}>
-          {aiLoading ? "Loading..." : "Ask AI"}
-        </button>
-        {aiError && <div className="text-red-500 text-sm">{aiError}</div>}
-        {aiResult && <div className="text-green-600 text-sm">{aiResult}</div>}
-        <div className="text-xs text-gray-500">AI results may require manual adjustment. Parsing is experimental.</div>
-      </div>
       <div className="flex gap-2">
-        <button type="submit" className="button" disabled={loading}>{loading ? "Saving..." : "Save"}</button>
+        <button type="submit" className="button" disabled={loading}>{loading ? "Saving..." : mode === "edit" ? "Save" : "Add"}</button>
         <button type="button" className="button" onClick={onClose}>Cancel</button>
       </div>
     </form>
