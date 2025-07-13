@@ -1,5 +1,6 @@
 // Chord progression types
 import type { ChordType, NoteType } from "./music";
+import { ScaleType } from "./music";
 
 export type ChordNumberReference = {
   number: number;
@@ -7,8 +8,7 @@ export type ChordNumberReference = {
 };
 
 export type ScaleRecommendation = {
-  name: string;
-  scale: number[];
+  scale: ScaleType;
 };
 
 export type ChordProgressionReference = {

@@ -24,3 +24,5 @@ export type Chord = {
 };
 
 export type ChordProgression = Chord[][];
+
+export type ScaleType = "major" | "minor" | "majorBlues" | "minorBlues" | "majorPentatonic" | "minorPentatonic" | "mixolydian" | "locrian" | "wholeTone" | "dorian";

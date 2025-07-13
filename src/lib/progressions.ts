@@ -15,8 +15,8 @@ const listProgressions: ChordProgressionReference[] = [
             [{ number: 5, type: "dominant" }, { number: 4, type: "dominant" }, { number: 1, type: "dominant" }, { number: 1, type: "dominant" }],
         ],
         recommendedScales: [
-            { name: "C Mixolydian", scale: [2,2,1,2,2,1,2] },
-            { name: "C Blues", scale: [2,1,1,3,2] }
+            { scale: "mixolydian" },
+            { scale: "majorBlues" }
         ]
     },
     {
@@ -31,8 +31,8 @@ const listProgressions: ChordProgressionReference[] = [
             [{ number: 5, type: "major" }, { number: 4, type: "major" }, { number: 1, type: "major" }, { number: 5, type: "major" }],
         ],
         recommendedScales: [
-            { name: "C Major", scale: [2,2,1,2,2,2,1] },
-            { name: "C Mixolydian", scale: [2,2,1,2,2,1,2] }
+            { scale: "major" },
+            { scale: "mixolydian" }
         ]
     },
     {
@@ -47,8 +47,8 @@ const listProgressions: ChordProgressionReference[] = [
             [{ number: 5, type: "major" }, { number: 4, type: "major" }, { number: 1, type: "major" }, { number: 1, type: "major" }],
         ],
         recommendedScales: [
-            { name: "C Major", scale: [2,2,1,2,2,2,1] },
-            { name: "C Blues", scale: [2,1,1,3,2] }
+            { scale: "major" },
+            { scale: "majorBlues" }
         ]
     },
     {
@@ -63,8 +63,8 @@ const listProgressions: ChordProgressionReference[] = [
             [{ number: 5, type: "major" }, { number: 4, type: "major" }, { number: 1, type: "major" }, { number: 5, type: "major" }],
         ],
         recommendedScales: [
-            { name: "C Major", scale: [2,2,1,2,2,2,1] },
-            { name: "C Mixolydian", scale: [2,2,1,2,2,1,2] }
+            { scale: "major" },
+            { scale: "mixolydian" }
         ]
     },
     {
@@ -82,8 +82,8 @@ const listProgressions: ChordProgressionReference[] = [
             ],
         ],
         recommendedScales: [
-            { name: "C Major", scale: [2,2,1,2,2,2,1] },
-            { name: "C Dorian", scale: [2,1,2,2,2,1,2] }
+            { scale: "major" },
+            { scale: "dorian" }
         ]
     },
     {
@@ -101,8 +101,8 @@ const listProgressions: ChordProgressionReference[] = [
             ],
         ],
         recommendedScales: [
-            { name: "C Major", scale: [2,2,1,2,2,2,1] },
-            { name: "C Dorian", scale: [2,1,2,2,2,1,2] }
+            { scale: "major" },
+            { scale: "dorian" }
         ]
     },
 ];

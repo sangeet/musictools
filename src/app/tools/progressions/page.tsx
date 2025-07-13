@@ -26,7 +26,7 @@ const BluesPage = () => {
     const [showCustomForm, setShowCustomForm] = useState(false);
     // Use ChordProgressionReference[] for customProgressions
     const [customProgressions, setCustomProgressions] = useState<ChordProgressionReference[]>([]);
-    const recommendedScaleKeys = selectedProgression.recommendedScales.map(s => getScaleKeyFromLogic(s.scale)).filter(Boolean) as string[];
+    const recommendedScaleKeys = selectedProgression.recommendedScales.map(s => s.scale);
     const [selectedScales, setSelectedScales] = useState<string[]>(recommendedScaleKeys);
     const progression = generateProgression(selectedProgression.progression, selectedKey);
     // Get unique chords by root and type
@@ -82,16 +82,8 @@ const BluesPage = () => {
                     <CustomProgressionForm
                         onClose={() => setShowCustomForm(false)}
                         onAdd={prog => {
-                            // Map recommendedScales to ScaleRecommendation[]
-                            const fixedProg = {
-                                ...prog,
-                                recommendedScales: prog.recommendedScales.map((rec) => ({
-                                    name: (rec as { name?: string }).name ?? "",
-                                    scale: (rec as { scale?: number[] }).scale ?? []
-                                }))
-                            };
-                            setCustomProgressions(prev => [...prev, fixedProg]);
-                            setSelectedProgression(fixedProg);
+                            setCustomProgressions(prev => [...prev, prog]);
+                            setSelectedProgression(prog);
                             setShowCustomForm(false);
                         }}
                     />
