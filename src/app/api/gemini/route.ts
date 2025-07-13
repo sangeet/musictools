@@ -1,6 +1,6 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { NextRequest } from 'next/server';
-import { allChordTypes } from "@/types/music";
+import { allChordTypes, allScaleTypes, allNoteTypes } from "@/types/music";
 
 export async function POST(req: NextRequest) {
   const { prompt } = await req.json();
@@ -13,16 +13,25 @@ export async function POST(req: NextRequest) {
     // Minimal instructions for reliable output
     const systemPrompt = `Return a JSON object with this exact structure:
 {
+  "name": string,
+  "defaultNote": one of [${allNoteTypes.join(", ")}],
+  "description": string,
   "progression": [
     [
       { "number": 1-7, "type": one of [${allChordTypes.join(", ")}] },
       ...
     ],
     ...
+  ],
+  "recommendedScales": [
+    { "scale": one of [${allScaleTypes.join(", ")}] },
+    ...
   ]
 }
 - Only use integer values from 1 to 7 for 'number'.
 - Always include both 'number' and 'type' in every chord object.
+- Only use the scale variable name for recommendedScales, not scale logic arrays or display names.
+- Always include a name, defaultNote, and description for the progression.
 - Avoid ultra-popular progressions like CGAF (1 5 6 4) unless the prompt specifically asks for them.`;
     const fullPrompt = `${prompt}\n\n${systemPrompt}`;
     // Log token count for prompt
@@ -38,6 +47,9 @@ export async function POST(req: NextRequest) {
         responseSchema: {
           type: Type.OBJECT,
           properties: {
+            name: { type: Type.STRING },
+            defaultNote: { type: Type.STRING, enum: allNoteTypes },
+            description: { type: Type.STRING },
             progression: {
               type: Type.ARRAY,
               items: {
@@ -51,9 +63,19 @@ export async function POST(req: NextRequest) {
                   propertyOrdering: ["number", "type"]
                 }
               }
+            },
+            recommendedScales: {
+              type: Type.ARRAY,
+              items: {
+                type: Type.OBJECT,
+                properties: {
+                  scale: { type: Type.STRING, enum: allScaleTypes }
+                },
+                propertyOrdering: ["scale"]
+              }
             }
           },
-          propertyOrdering: ["progression"]
+          propertyOrdering: ["name", "defaultNote", "description", "progression", "recommendedScales"]
         }
       }
     });

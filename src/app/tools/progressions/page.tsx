@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { allNotes, allScales, generateProgression, generateScale } from "@/lib/chords";
 import { NoteType } from "@/types/music";
 import { listProgressions } from "@/lib/progressions";
@@ -21,7 +21,7 @@ function camelToTitle(str: string) {
 }
 
 const BluesPage = () => {
-    const [selectedKey, setselectedKey] = useState<NoteType>("C");
+    const [selectedKey, setselectedKey] = useState<NoteType>(listProgressions[0].defaultNote);
     const [selectedProgression, setSelectedProgression] = useState(listProgressions[0]);
     const [showCustomForm, setShowCustomForm] = useState(false);
     // Use ChordProgressionReference[] for customProgressions
@@ -35,6 +35,12 @@ const BluesPage = () => {
         .filter((chord, idx, arr) =>
             arr.findIndex(c => c.root === chord.root && c.type === chord.type) === idx
         );
+
+    useEffect(() => {
+        if (selectedProgression.defaultNote && selectedKey !== selectedProgression.defaultNote) {
+            setselectedKey(selectedProgression.defaultNote);
+        }
+    }, [selectedProgression]);
 
     function handleScaleToggle(scale: string) {
         setSelectedScales(prev =>
@@ -53,7 +59,10 @@ const BluesPage = () => {
                         <button
                             key={`${note}-${index}`}
                             onClick={() => setselectedKey(note)}
-                            className={`button ${note === selectedKey ? "border-gray-400" : ""}`}
+                            className={`button border-2 transition-colors duration-150
+                                ${note === selectedKey ? "button-selected" : ""}
+                            `}
+                            aria-pressed={note === selectedKey}
                         >{note}</button>
                     )}
                 </div>
@@ -86,8 +95,17 @@ const BluesPage = () => {
                             setSelectedProgression(prog);
                             setShowCustomForm(false);
                         }}
+                        initialData={{
+                            name: selectedProgression.name,
+                            description: selectedProgression.description,
+                            progression: selectedProgression.progression,
+                            defaultNote: selectedProgression.defaultNote
+                        }}
                     />
                 )}
+                <div className="flex flex-col gap-2 my-4">
+                    <div className="text-md text-gray-700 dark:text-gray-300">{selectedProgression.description}</div>
+                </div>
                 <div className="flex justify-center my-4 sm:my-8">
                     <div className="flex flex-wrap gap-5 sm:gap-16 w-full justify-center">
                         {allChordsInProgression.map((chord, index) => (

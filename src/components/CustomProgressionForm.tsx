@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { allNotes, generateChordFromReference } from "@/lib/chords";
-import { allChordTypes, ChordType, NoteType } from "@/types/music";
+import { allNoteTypes, allChordTypes, ChordType, NoteType } from "@/types/music";
 import { ChordProgressionReference, ChordNumberReference } from "@/types/progression";
 
 // Chord slot type for visual builder
@@ -12,9 +12,10 @@ interface ChordSlot {
 
 type ChordRow = ChordSlot[];
 
-export default function CustomProgressionForm({ onClose, onAdd }: {
+export default function CustomProgressionForm({ onClose, onAdd, initialData }: {
   onClose: () => void,
-  onAdd?: (prog: ChordProgressionReference) => void
+  onAdd?: (prog: ChordProgressionReference) => void,
+  initialData?: Partial<ChordProgressionReference>
 }) {
   const defaultRow: ChordRow = [
     { number: 1, type: "major" },
@@ -23,6 +24,7 @@ export default function CustomProgressionForm({ onClose, onAdd }: {
     { number: 1, type: "major" },
   ];
   const [name, setName] = useState("");
+  const [description, setDescription] = useState("Custom progression");
   const [rows, setRows] = useState<ChordNumberReference[][]>([defaultRow]);
   const [rootNote, setRootNote] = useState<NoteType>("C");
   const [loading, setLoading] = useState(false);
@@ -69,11 +71,11 @@ export default function CustomProgressionForm({ onClose, onAdd }: {
     const progressionObj: ChordProgressionReference = {
       name,
       defaultNote: rootNote,
-      description: "Custom progression",
+      description,
       source: "custom",
       creationDate: Date.now(),
       progression: rows.map(row => row.map(slot => ({ number: slot.number, type: slot.type }))),
-      recommendedScales: [] // Add empty array for custom progressions
+      recommendedScales: []
     };
     if (onAdd) {
       onAdd(progressionObj);
@@ -81,7 +83,9 @@ export default function CustomProgressionForm({ onClose, onAdd }: {
     setLoading(false);
     setSuccess(true);
     setName("");
+    setDescription("Custom progression");
     setRows([defaultRow]);
+    setRootNote("C");
     setTimeout(onClose, 1200);
   }
 
@@ -96,6 +100,7 @@ export default function CustomProgressionForm({ onClose, onAdd }: {
     })
   );
 
+  // When AI data is received, update form fields accordingly
   async function handleAskAI() {
     setAiLoading(true);
     setAiError("");
@@ -108,14 +113,14 @@ export default function CustomProgressionForm({ onClose, onAdd }: {
       });
       if (!res.ok) throw new Error("API error");
       const data = await res.json();
-      console.log(data);
-      // Robust parsing: try to extract progression from various formats
       let progression: ChordNumberReference[][] | null = null;
-      // Try JSON
       if (typeof data.result === "string") {
         try {
           const json = JSON.parse(data.result);
           if (Array.isArray(json.progression)) progression = json.progression;
+          if (json.name) setName(json.name);
+          if (json.description) setDescription(json.description);
+          if (json.defaultNote) setRootNote(json.defaultNote as NoteType);
         } catch {
           // Try to parse as text: e.g. "Cmaj7 | Dm7 | G7 | Cmaj7"
           const text = data.result.trim();
@@ -143,7 +148,6 @@ export default function CustomProgressionForm({ onClose, onAdd }: {
 
   return (
     <form className="flex flex-col gap-4 p-4 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-900 w-full mx-auto mt-4" onSubmit={handleSubmit}>
-      <h3 className="text-lg font-bold">Add Custom Progression</h3>
       <input
         type="text"
         className="button w-full"
@@ -152,12 +156,29 @@ export default function CustomProgressionForm({ onClose, onAdd }: {
         onChange={e => setName(e.target.value)}
         required
       />
+      <textarea
+        className="button w-full"
+        placeholder="Description"
+        value={description}
+        onChange={e => setDescription(e.target.value)}
+        rows={2}
+      />
       <div className="flex gap-4 items-center">
         <div className="flex gap-2 items-center">
-          <label className="text-sm">Preview Root Note:</label>
-          <select className="button" value={rootNote} onChange={e => setRootNote(e.target.value as NoteType)}>
-            {allNotes.map(n => <option key={n} value={n}>{n}</option>)}
-          </select>
+          <label className="text-sm">Default Key:</label>
+          <div className="flex gap-1 flex-wrap">
+            {allNoteTypes.map(n => (
+              <button
+                key={n}
+                type="button"
+                className={`border-2 transition-colors duration-150 button
+                    ${rootNote === n ? "button-selected" : ""}
+                `}
+                onClick={() => setRootNote(n as NoteType)}
+                aria-pressed={rootNote === n}
+              >{n}</button>
+            ))}
+          </div>
         </div>
 
         <div className="flex gap-2 items-center">

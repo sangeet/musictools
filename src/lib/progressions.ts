@@ -69,7 +69,7 @@ const listProgressions: ChordProgressionReference[] = [
     },
     {
         name: "Jazz 2-5-1",
-        defaultNote: "C",
+        defaultNote: "F",
         description: "Classic jazz 2-5-1 turnaround progression.",
         source: "default",
         creationDate: now,
