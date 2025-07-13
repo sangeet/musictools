@@ -26,13 +26,12 @@ export async function POST(req: NextRequest) {
 - Avoid ultra-popular progressions like CGAF (1 5 6 4) unless the prompt specifically asks for them.`;
     const fullPrompt = `${prompt}\n\n${systemPrompt}`;
     // Log token count for prompt
-    const countTokensResponse = await ai.models.countTokens({
-      model: "gemini-2.5-flash-lite-preview-06-17",
-      contents: fullPrompt
-    });
-    console.log("Gemini token count (prompt):", countTokensResponse.totalTokens);
+    // const countTokensResponse = await ai.models.countTokens({
+    //   model: "gemini-2.5-flash",
+    //   contents: fullPrompt
+    // });
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash-lite-preview-06-17",
+      model: "gemini-2.5-flash",
       contents: [{ parts: [{ text: fullPrompt }] }],
       config: {
         responseMimeType: "application/json",

@@ -1,5 +1,5 @@
 "use client";
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { allNotes, ChordType, NoteType, ChordProgreessionReference, ChordNumberReference, generateChordFromReference, allChordTypes } from "@/lib/chords";
 
 // Chord slot type for visual builder
@@ -101,21 +101,18 @@ export default function CustomProgressionForm({ onClose, onAdd }: {
       console.log(data);
       // Robust parsing: try to extract progression from various formats
       let progression: ChordNumberReference[][] | null = null;
-      let recommendedScales: ChordNumberReference[] = [];
       // Try JSON
       if (typeof data.result === "string") {
         try {
           const json = JSON.parse(data.result);
           if (Array.isArray(json.progression)) progression = json.progression;
-          if (Array.isArray(json.recommendedScales)) recommendedScales = json.recommendedScales;
         } catch {
           // Try to parse as text: e.g. "Cmaj7 | Dm7 | G7 | Cmaj7"
           const text = data.result.trim();
           const chords = text.split(/\s*\|\s*/);
           if (chords.length > 1) {
-            progression = [chords.map((ch: string) => {
+            progression = [chords.map(() => {
               // Simple parser: extract degree and type
-              const match = ch.match(/([A-G][b#]?)(m|maj|min|dim|aug|7|m7|maj7)?/i);
               return { number: 1, type: "major" };
             })];
           }
@@ -127,8 +124,8 @@ export default function CustomProgressionForm({ onClose, onAdd }: {
       } else {
         setAiError("Could not parse AI response. Try a different prompt.");
       }
-    } catch (err: any) {
-      setAiError(err.message || "Unknown error");
+    } catch (err) {
+      setAiError((err instanceof Error && err.message) ? err.message : "Unknown error");
     } finally {
       setAiLoading(false);
     }
