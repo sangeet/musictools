@@ -10,7 +10,7 @@ export async function POST(req: NextRequest) {
   }
   try {
     const ai = new GoogleGenAI({ apiKey });
-    // Add instructions for strict typing
+    // Minimal instructions for reliable output
     const systemPrompt = `Return a JSON object with this exact structure:
 {
   "progression": [
@@ -21,8 +21,16 @@ export async function POST(req: NextRequest) {
     ...
   ]
 }
-Only use numbers 1-7 for 'number'. Only use these chord types for 'type': [${allChordTypes.join(", ")}]. Do not use chord names or text. Do not include any explanation or extra text.`;
+- Only use integer values from 1 to 7 for 'number'.
+- Always include both 'number' and 'type' in every chord object.
+- Avoid ultra-popular progressions like CGAF (1 5 6 4) unless the prompt specifically asks for them.`;
     const fullPrompt = `${prompt}\n\n${systemPrompt}`;
+    // Log token count for prompt
+    const countTokensResponse = await ai.models.countTokens({
+      model: "gemini-2.5-flash-lite-preview-06-17",
+      contents: fullPrompt
+    });
+    console.log("Gemini token count (prompt):", countTokensResponse.totalTokens);
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash-lite-preview-06-17",
       contents: [{ parts: [{ text: fullPrompt }] }],
@@ -50,6 +58,7 @@ Only use numbers 1-7 for 'number'. Only use these chord types for 'type': [${all
         }
       }
     });
+    console.log("Gemini usage metadata (response):", response.usageMetadata);
     return new Response(JSON.stringify({ result: response.text }), { status: 200 });
   } catch (err) {
     return new Response(JSON.stringify({ error: 'Gemini API request failed', details: String(err) }), { status: 500 });
