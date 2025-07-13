@@ -1,6 +1,6 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { NextRequest } from 'next/server';
-import { allChordTypes } from "@/lib/chords";
+import { allChordTypes } from "@/types/music";
 
 export async function POST(req: NextRequest) {
   const { prompt } = await req.json();

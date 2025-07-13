@@ -1,5 +1,4 @@
-import { ChordNumberReference, ChordProgressionReference } from "../types/progression";
-import { NoteType, ChordType, Chord, ChordProgression, ScaleLogic } from "../types/music";
+import { ChordProgressionReference } from "../types/progression";
 
 const now = Date.now();
 

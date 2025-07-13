@@ -4,7 +4,7 @@ import { useState } from "react";
 import { allNotes, allScales, generateProgression, generateScale } from "@/lib/chords";
 import { NoteType } from "@/types/music";
 import { listProgressions } from "@/lib/progressions";
-import { ScaleRecommendation, ChordProgressionReference } from "@/types/progression";
+import { ChordProgressionReference } from "@/types/progression";
 import { KeyboardVisual } from "@/components/music/keyboard-visual";
 import { ChordProgressionSection } from "@/components/music/chord-progression";
 import Layout from "@/components/Layout";

@@ -133,4 +133,5 @@ function generateChords(rootNote: NoteType): Record<ChordType, Chord> {
 }
 
 // Remove duplicate export statements for allNotes, allScales, majorScaleLogic, minorScaleLogic, majorChordLogic, minorChordLogic, allChordTypes
-export { generateScales, generateChords, generateProgression, generateScale, generateChordFromReference };
+// Remove duplicate export statements for allNotes, allScales, majorScaleLogic, minorScaleLogic, majorChordLogic, minorChordLogic, allChordTypes
+export { generateScales, generateChords, generateProgression, generateScale, generateChordFromReference, NoteType };
