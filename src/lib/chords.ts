@@ -1,55 +1,27 @@
-type NoteType = "C" | "Db" | "D" | "Eb" | "E" | "F" | "Gb" | "G" | "Ab" | "A" | "Bb" | "B";
-const allChordTypes = [
-  "major", "minor", "dominant", "diminished", "augmented", "sus4", "sus2", "sixth", "maj7", "ninth", "eleventh", "thirteenth", "add9", "add11", "add13", "m7", "m9", "m11", "m13"
-];
-export type ChordType = typeof allChordTypes[number];
-type Scale = NoteType[];
+import { ChordNumberReference, ChordProgressionReference } from "../types/progression";
+import { NoteType, ChordType, Chord, ChordProgression, ScaleLogic, ChordLogic, Scale } from "../types/music";
 
-type ChordProgreessionReference = ChordNumberReference[][];
-
-type ChordNumberReference = {
-    number: number;
-    type: ChordType;
-}
-
-type ScaleLogic = number[]
-
-type ChordLogic = {
-    logic: number[];
-    scaleLogic: ScaleLogic;
-    suffix: string;
-}
-
-type Chord = {
-    root: NoteType;
-    type: ChordType;
-    notes: NoteType[];
-    symbol: string;
-}
-
-type ChordProgression = Chord[][];
-
-function generateProgression(chordProgression: ChordProgreessionReference, rootNote: NoteType): ChordProgression {
+function generateProgression(chordProgression: ChordProgressionReference["progression"], rootNote: NoteType): ChordProgression {
     const progression = chordProgression.map(line => line.map(chord => generateChordFromReference(rootNote, chord)));
     return progression
 }
 
-const allNotes: NoteType[] = ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"];
+export const allNotes: NoteType[] = ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"];
 
-const majorScaleLogic = [2, 2, 1, 2, 2, 2, 1];
-const minorScaleLogic = [2, 1, 2, 2, 1, 2, 2];
-const majorBluesScale = [2, 1, 1, 3, 2];
-const minorBluesScale = [3, 2, 1, 1, 3 ];
-const majorPentatonic = [2, 2, 3, 2, 3];
-const minorPentatonic = [3, 2, 2, 3];
-const mixolydian = [2, 2, 1, 2, 2, 1, 2];
-const locrian = [1, 2, 2, 1, 2, 2, 2];
-const wholeToneScale = [2, 2, 2, 2, 2, 2];
-const dorian = [2, 1, 2, 2, 2, 1, 2];
+export const majorScaleLogic: ScaleLogic = [2, 2, 1, 2, 2, 2, 1];
+export const minorScaleLogic: ScaleLogic = [2, 1, 2, 2, 1, 2, 2];
+export const majorBluesScale: ScaleLogic = [2, 1, 1, 3, 2];
+export const minorBluesScale: ScaleLogic = [3, 2, 1, 1, 3];
+export const majorPentatonic: ScaleLogic = [2, 2, 3, 2, 3];
+export const minorPentatonic: ScaleLogic = [3, 2, 2, 3];
+export const mixolydian: ScaleLogic = [2, 2, 1, 2, 2, 1, 2];
+export const locrian: ScaleLogic = [1, 2, 2, 1, 2, 2, 2];
+export const wholeToneScale: ScaleLogic = [2, 2, 2, 2, 2, 2];
+export const dorian: ScaleLogic = [2, 1, 2, 2, 2, 1, 2];
 
-type ScaleType = "major" | "minor" | "majorBlues" | "minorBlues" | "majorPentatonic" | "minorPentatonic" | "mixolydian" | "locrian" | "wholeTone";
+export type ScaleType = "major" | "minor" | "majorBlues" | "minorBlues" | "majorPentatonic" | "minorPentatonic" | "mixolydian" | "locrian" | "wholeTone";
 
-const allScales: Record<ScaleType | "dorian", ScaleLogic> = {
+export const allScales: Record<ScaleType | "dorian", ScaleLogic> = {
     major: majorScaleLogic,
     minor: minorScaleLogic,
     majorBlues: majorBluesScale,
@@ -60,12 +32,12 @@ const allScales: Record<ScaleType | "dorian", ScaleLogic> = {
     locrian: locrian,
     wholeTone: wholeToneScale,
     dorian: dorian
-}
+};
 
-const majorChordLogic = [1, 3, 5];
-const minorChordLogic = [1, 3, 5];
+export const majorChordLogic: ChordLogic = { logic: [1, 3, 5], scaleLogic: allScales.major, suffix: "" };
+export const minorChordLogic: ChordLogic = { logic: [1, 3, 5], scaleLogic: allScales.minor, suffix: "m" };
 
-const allChordLogic: Record<ChordType, ChordLogic> = {
+export const allChordLogic: Record<ChordType, ChordLogic> = {
     major: { logic: [1, 3, 5], scaleLogic: allScales.major, suffix: "" },
     minor: { logic: [1, 3, 5], scaleLogic: allScales.minor, suffix: "m" },
     dominant: { logic: [1, 3, 5, 7], scaleLogic: allScales.mixolydian, suffix: "7" },
@@ -84,8 +56,8 @@ const allChordLogic: Record<ChordType, ChordLogic> = {
     m7: { logic: [1, 3, 5, 7], scaleLogic: allScales.minor, suffix: "m7" },
     m9: { logic: [1, 3, 5, 7, 9], scaleLogic: allScales.minor, suffix: "m9" },
     m11: { logic: [1, 3, 5, 7, 9, 11], scaleLogic: allScales.minor, suffix: "m11" },
-    m13: { logic: [1, 3, 5, 7, 9, 11, 13], scaleLogic: allScales.minor, suffix: "m13" } 
-}
+    m13: { logic: [1, 3, 5, 7, 9, 11, 13], scaleLogic: allScales.minor, suffix: "m13" }
+};
 
 function generateScale(rootNote: NoteType, scaleLogic: ScaleLogic): NoteType[] {
     const rootIndex = allNotes.indexOf(rootNote);
@@ -160,6 +132,5 @@ function generateChords(rootNote: NoteType): Record<ChordType, Chord> {
     return chords;
 }
 
+// Remove duplicate export statements for allNotes, allScales, majorScaleLogic, minorScaleLogic, majorChordLogic, minorChordLogic, allChordTypes
 export { generateScales, generateChords, generateProgression, generateScale, generateChordFromReference };
-export { allScales, allNotes, majorScaleLogic, minorScaleLogic, majorChordLogic, minorChordLogic, allChordTypes };
-    export { type ChordProgreessionReference, type ChordNumberReference, type Scale, type Chord, type NoteType, type ChordProgression, type ScaleLogic };

@@ -27,11 +27,11 @@ export async function POST(req: NextRequest) {
     const fullPrompt = `${prompt}\n\n${systemPrompt}`;
     // Log token count for prompt
     // const countTokensResponse = await ai.models.countTokens({
-    //   model: "gemini-2.5-flash",
+    //   model: "gemini-2.5-flash-lite-preview-06-17",
     //   contents: fullPrompt
     // });
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-2.5-flash-lite-preview-06-17",
       contents: [{ parts: [{ text: fullPrompt }] }],
       config: {
         responseMimeType: "application/json",

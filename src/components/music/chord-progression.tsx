@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { PlayIcon } from "@/components/icons/play";
-import { ChordProgression } from "@/lib/chords";
+import { ChordProgression } from "@/types/music";
 import { StopIcon } from "@/components/icons/stop";
 
 export const ChordProgressionSection = ({ progresssion }: { progresssion: ChordProgression}) => {

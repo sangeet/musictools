@@ -1,113 +1,111 @@
-import { allScales, ChordProgreessionReference, ScaleLogic } from "./chords";
+import { ChordNumberReference, ChordProgressionReference } from "../types/progression";
+import { NoteType, ChordType, Chord, ChordProgression, ScaleLogic } from "../types/music";
 
-const twelveBarBluesProgression: ChordProgreessionReference = [
-    [{ number: 1, type: "dominant" }, { number: 1, type: "dominant" }, { number: 1, type: "dominant" }, { number: 1, type: "dominant" }],
-    [{ number: 4, type: "dominant" }, { number: 4, type: "dominant" }, { number: 1, type: "dominant" }, { number: 1, type: "dominant" }],
-    [{ number: 5, type: "dominant" }, { number: 4, type: "dominant" }, { number: 1, type: "dominant" }, { number: 1, type: "dominant" }],
-];
+const now = Date.now();
 
-const twelveBarFiveTurnaround: ChordProgreessionReference = [
-    [{ number: 1, type: "major" }, { number: 1, type: "major" }, { number: 1, type: "major" }, { number: 1, type: "major" }],
-    [{ number: 4, type: "major" }, { number: 4, type: "major" }, { number: 1, type: "major" }, { number: 1, type: "major" }],
-    [{ number: 5, type: "major" }, { number: 4, type: "major" }, { number: 1, type: "major" }, { number: 5, type: "major" }],
-];
-
-const twelveBarQuickChange: ChordProgreessionReference = [
-    [{ number: 1, type: "major" }, { number: 4, type: "major" }, { number: 1, type: "major" }, { number: 1, type: "major" }],
-    [{ number: 4, type: "major" }, { number: 4, type: "major" }, { number: 1, type: "major" }, { number: 1, type: "major" }],
-    [{ number: 5, type: "major" }, { number: 4, type: "major" }, { number: 1, type: "major" }, { number: 1, type: "major" }],
-];
-
-const twelveBarQuickChangeFiveTurnaround: ChordProgreessionReference = [
-    [{ number: 1, type: "major" }, { number: 4, type: "major" }, { number: 1, type: "major" }, { number: 1, type: "major" }],
-    [{ number: 4, type: "major" }, { number: 4, type: "major" }, { number: 1, type: "major" }, { number: 1, type: "major" }],
-    [{ number: 5, type: "major" }, { number: 4, type: "major" }, { number: 1, type: "major" }, { number: 5, type: "major" }],
-];
-
-const jazzTwoFiveOne: ChordProgreessionReference = [
-    [
-        { number: 2, type: "minor" },
-        { number: 5, type: "dominant" },
-        { number: 1, type: "major" },
-        { number: 1, type: "major" },
-    ]
-];
-
-const jazzTurnaround: ChordProgreessionReference = [
-    [
-        { number: 1, type: "major" },
-        { number: 6, type: "minor" },
-        { number: 2, type: "minor" },
-        { number: 5, type: "dominant" },
-    ]
-];
-
-type ScaleRecommendation = {
-    name: string;
-    scale: ScaleLogic;
-}
-
-const recommendedBluesScales: ScaleRecommendation[] = [
-    {
-        name: "Blues",
-        scale: allScales.minorBlues,
-    },
-    {
-        name: "Mixolydian",
-        scale: allScales.mixolydian,
-    }
-];
-
-const jazzScales: ScaleRecommendation[] = [
-    {
-        name: "Major",
-        scale: allScales.major,
-    },
-    {
-        name: "Dorian",
-        scale: allScales.dorian,
-    },
-    {
-        name: "Mixolydian",
-        scale: allScales.mixolydian,
-    },
-];
-
-const listProgressions: {
-    name: string,
-    progression: ChordProgreessionReference,
-    recommendedScales: ScaleRecommendation[],
-}[] = [
+const listProgressions: ChordProgressionReference[] = [
     {
         name: "Standard Blues",
-        progression: twelveBarBluesProgression,
-        recommendedScales: recommendedBluesScales,
+        defaultNote: "C",
+        description: "Classic 12-bar blues progression in dominant chords.",
+        source: "default",
+        creationDate: now,
+        progression: [
+            [{ number: 1, type: "dominant" }, { number: 1, type: "dominant" }, { number: 1, type: "dominant" }, { number: 1, type: "dominant" }],
+            [{ number: 4, type: "dominant" }, { number: 4, type: "dominant" }, { number: 1, type: "dominant" }, { number: 1, type: "dominant" }],
+            [{ number: 5, type: "dominant" }, { number: 4, type: "dominant" }, { number: 1, type: "dominant" }, { number: 1, type: "dominant" }],
+        ],
+        recommendedScales: [
+            { name: "C Mixolydian", scale: [2,2,1,2,2,1,2] },
+            { name: "C Blues", scale: [2,1,1,3,2] }
+        ]
     },
     {
         name: "Standard Blues V Turnaround",
-        progression: twelveBarFiveTurnaround,
-        recommendedScales: recommendedBluesScales,
+        defaultNote: "C",
+        description: "12-bar blues with a V chord turnaround.",
+        source: "default",
+        creationDate: now,
+        progression: [
+            [{ number: 1, type: "major" }, { number: 1, type: "major" }, { number: 1, type: "major" }, { number: 1, type: "major" }],
+            [{ number: 4, type: "major" }, { number: 4, type: "major" }, { number: 1, type: "major" }, { number: 1, type: "major" }],
+            [{ number: 5, type: "major" }, { number: 4, type: "major" }, { number: 1, type: "major" }, { number: 5, type: "major" }],
+        ],
+        recommendedScales: [
+            { name: "C Major", scale: [2,2,1,2,2,2,1] },
+            { name: "C Mixolydian", scale: [2,2,1,2,2,1,2] }
+        ]
     },
     {
         name: "Quick Change Blues",
-        progression: twelveBarQuickChange,
-        recommendedScales: recommendedBluesScales,
+        defaultNote: "C",
+        description: "Blues progression with a quick change to the IV chord.",
+        source: "default",
+        creationDate: now,
+        progression: [
+            [{ number: 1, type: "major" }, { number: 4, type: "major" }, { number: 1, type: "major" }, { number: 1, type: "major" }],
+            [{ number: 4, type: "major" }, { number: 4, type: "major" }, { number: 1, type: "major" }, { number: 1, type: "major" }],
+            [{ number: 5, type: "major" }, { number: 4, type: "major" }, { number: 1, type: "major" }, { number: 1, type: "major" }],
+        ],
+        recommendedScales: [
+            { name: "C Major", scale: [2,2,1,2,2,2,1] },
+            { name: "C Blues", scale: [2,1,1,3,2] }
+        ]
     },
     {
         name: "Quick Change Blues V Turnaround",
-        progression: twelveBarQuickChangeFiveTurnaround,
-        recommendedScales: recommendedBluesScales,
+        defaultNote: "C",
+        description: "Quick change blues with a V chord turnaround.",
+        source: "default",
+        creationDate: now,
+        progression: [
+            [{ number: 1, type: "major" }, { number: 4, type: "major" }, { number: 1, type: "major" }, { number: 1, type: "major" }],
+            [{ number: 4, type: "major" }, { number: 4, type: "major" }, { number: 1, type: "major" }, { number: 1, type: "major" }],
+            [{ number: 5, type: "major" }, { number: 4, type: "major" }, { number: 1, type: "major" }, { number: 5, type: "major" }],
+        ],
+        recommendedScales: [
+            { name: "C Major", scale: [2,2,1,2,2,2,1] },
+            { name: "C Mixolydian", scale: [2,2,1,2,2,1,2] }
+        ]
     },
     {
         name: "Jazz 2-5-1",
-        progression: jazzTwoFiveOne,
-        recommendedScales: jazzScales,
+        defaultNote: "C",
+        description: "Classic jazz 2-5-1 turnaround progression.",
+        source: "default",
+        creationDate: now,
+        progression: [
+            [
+                { number: 2, type: "minor" },
+                { number: 5, type: "dominant" },
+                { number: 1, type: "major" },
+                { number: 1, type: "major" },
+            ],
+        ],
+        recommendedScales: [
+            { name: "C Major", scale: [2,2,1,2,2,2,1] },
+            { name: "C Dorian", scale: [2,1,2,2,2,1,2] }
+        ]
     },
     {
         name: "Jazz Turnaround",
-        progression: jazzTurnaround,
-        recommendedScales: jazzScales,
+        defaultNote: "C",
+        description: "Jazz turnaround progression.",
+        source: "default",
+        creationDate: now,
+        progression: [
+            [
+                { number: 1, type: "major" },
+                { number: 6, type: "minor" },
+                { number: 2, type: "minor" },
+                { number: 5, type: "dominant" },
+            ],
+        ],
+        recommendedScales: [
+            { name: "C Major", scale: [2,2,1,2,2,2,1] },
+            { name: "C Dorian", scale: [2,1,2,2,2,1,2] }
+        ]
     },
 ];
 
-export { listProgressions, type ScaleRecommendation }
+export { listProgressions };

@@ -1,13 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { allNotes, allScales, generateProgression, generateScale, NoteType } from "@/lib/chords";
-import { listProgressions, ScaleRecommendation } from "../../../lib/progressions";
+import { allNotes, allScales, generateProgression, generateScale } from "@/lib/chords";
+import { NoteType } from "@/types/music";
+import { listProgressions } from "@/lib/progressions";
+import { ScaleRecommendation, ChordProgressionReference } from "@/types/progression";
 import { KeyboardVisual } from "@/components/music/keyboard-visual";
 import { ChordProgressionSection } from "@/components/music/chord-progression";
 import Layout from "@/components/Layout";
 import CustomProgressionForm from "@/components/CustomProgressionForm";
-import { ChordProgreessionReference } from "@/lib/chords";
 
 const allScaleOptions = Object.keys(allScales);
 
@@ -23,7 +24,8 @@ const BluesPage = () => {
     const [selectedKey, setselectedKey] = useState<NoteType>("C");
     const [selectedProgression, setSelectedProgression] = useState(listProgressions[0]);
     const [showCustomForm, setShowCustomForm] = useState(false);
-    const [customProgressions, setCustomProgressions] = useState<{ name: string, progression: ChordProgreessionReference, recommendedScales: ScaleRecommendation[] }[]>([]);
+    // Use ChordProgressionReference[] for customProgressions
+    const [customProgressions, setCustomProgressions] = useState<ChordProgressionReference[]>([]);
     const recommendedScaleKeys = selectedProgression.recommendedScales.map(s => getScaleKeyFromLogic(s.scale)).filter(Boolean) as string[];
     const [selectedScales, setSelectedScales] = useState<string[]>(recommendedScaleKeys);
     const progression = generateProgression(selectedProgression.progression, selectedKey);

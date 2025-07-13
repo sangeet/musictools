@@ -1,6 +1,8 @@
 "use client";
 import { useState } from "react";
-import { allNotes, ChordType, NoteType, ChordProgreessionReference, ChordNumberReference, generateChordFromReference, allChordTypes } from "@/lib/chords";
+import { allNotes, generateChordFromReference } from "@/lib/chords";
+import { allChordTypes, ChordType, NoteType } from "@/types/music";
+import { ChordProgressionReference, ChordNumberReference } from "@/types/progression";
 
 // Chord slot type for visual builder
 interface ChordSlot {
@@ -12,7 +14,7 @@ type ChordRow = ChordSlot[];
 
 export default function CustomProgressionForm({ onClose, onAdd }: {
   onClose: () => void,
-  onAdd?: (prog: { name: string, progression: ChordProgreessionReference, recommendedScales: ChordNumberReference[] }) => void
+  onAdd?: (prog: ChordProgressionReference) => void
 }) {
   const defaultRow: ChordRow = [
     { number: 1, type: "major" },
@@ -64,9 +66,17 @@ export default function CustomProgressionForm({ onClose, onAdd }: {
     setLoading(true);
     setError("");
     setSuccess(false);
-    const progression: ChordProgreessionReference = rows.map(row => row.map(slot => ({ number: slot.number, type: slot.type })));
+    const progressionObj: ChordProgressionReference = {
+      name,
+      defaultNote: rootNote,
+      description: "Custom progression",
+      source: "custom",
+      creationDate: Date.now(),
+      progression: rows.map(row => row.map(slot => ({ number: slot.number, type: slot.type }))),
+      recommendedScales: [] // Add empty array for custom progressions
+    };
     if (onAdd) {
-      onAdd({ name, progression, recommendedScales: [] });
+      onAdd(progressionObj);
     }
     setLoading(false);
     setSuccess(true);
