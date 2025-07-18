@@ -1,6 +1,6 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { NextRequest } from 'next/server';
-import { allChordTypes, allScaleTypes, allNoteTypes } from "@/types/music";
+import { allNotes, allChordTypes, allScaleTypes } from "@/tonal-lib/chords";
 
 export async function POST(req: NextRequest) {
   const { prompt } = await req.json();
@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
     const systemPrompt = `Return a JSON object with this exact structure:
 {
   "name": string,
-  "defaultNote": one of [${allNoteTypes.join(", ")}],
+  "defaultNote": one of [${allNotes.join(", ")}],
   "description": string,
   "progression": [
     Prefer progressions with more chords per line (horizontal), and fewer lines (vertical).
@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
           type: Type.OBJECT,
           properties: {
             name: { type: Type.STRING },
-            defaultNote: { type: Type.STRING, enum: allNoteTypes },
+            defaultNote: { type: Type.STRING, enum: allNotes },
             description: { type: Type.STRING },
             progression: {
               type: Type.ARRAY,

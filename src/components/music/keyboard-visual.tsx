@@ -1,11 +1,11 @@
-import { NoteType } from "@/types/music";
+import { NoteType, ChordType, ScaleType, Chord, ChordNumberReference, ScaleRecommendation, ChordProgressionReference, ChordProgression, allNotes, allChordTypes, allScaleTypes } from "@/tonal-lib/types";
 
 export const KeyboardVisual = ({
   highlightedNotes,
   octaves = 1,
   width = 210 // default width in px for 1 octave (7 white keys * 30px)
 }: {
-  highlightedNotes: NoteType[],
+  highlightedNotes: TonalLib.NoteType[],
   octaves?: number,
   width?: number
 }) => {
@@ -26,9 +26,14 @@ export const KeyboardVisual = ({
     { note: "Bb", pos: 5.7 }
   ];
 
+  function logOnClick() {
+    console.log(highlightedNotes)
+  }
+
   return (
     <div
       className="relative"
+      onClick={logOnClick}
       style={{
         width: width,
         height: whiteKeyHeight,
@@ -43,7 +48,7 @@ export const KeyboardVisual = ({
       <div className="absolute left-0 top-0 flex" style={{ zIndex: 1 }}>
         {Array.from({ length: octaves }).flatMap((_, oct) =>
           whiteNotes.map((n) => {
-            const note = n as NoteType;
+            const note = n as TonalLib.NoteType;
             return (
               <div
                 key={`w-${oct}-${n}`}
@@ -58,7 +63,7 @@ export const KeyboardVisual = ({
         )}
       </div>
       {/* Black keys */}
-      <div className="absolute top-0" style={{ zIndex: 2, width: "100%", height: blackKeyHeight, left: width/25.0 }}>
+      <div className="absolute top-0" style={{ zIndex: 2, width: "100%", height: blackKeyHeight, left: width / 25.0 }}>
         {Array.from({ length: octaves }).flatMap((_, oct) =>
           blackNotes.map(({ note, pos }) => {
             const left = ((oct * 7 + pos) * whiteKeyWidth) - blackKeyWidth / 2;
@@ -71,7 +76,7 @@ export const KeyboardVisual = ({
                   width: blackKeyWidth,
                   height: blackKeyHeight
                 }}
-                className={`${highlightedNotes.includes(note as NoteType) ? "bg-yellow-500" : "bg-gray-800"} border border-black rounded-b`}
+                className={`${highlightedNotes.includes(note as TonalLib.NoteType) ? "bg-yellow-500" : "bg-gray-800"} border border-black rounded-b`}
               />
             );
           })

@@ -2,10 +2,10 @@
 
 import { useEffect, useRef, useState } from "react";
 import { PlayIcon } from "@/components/icons/play";
-import { ChordProgression } from "@/types/music";
+import { NoteType, ChordType, ScaleType, Chord, ChordNumberReference, ScaleRecommendation, ChordProgressionReference, ChordProgression, allNotes, allChordTypes, allScaleTypes } from "@/tonal-lib/types";
 import { StopIcon } from "@/components/icons/stop";
 
-export const ChordProgressionSection = ({ progresssion }: { progresssion: ChordProgression}) => {
+export const ChordProgressionSection = ({ progresssion }: { progresssion: TonalLib.ChordProgression }) => {
     const numBars = progresssion.flat().length
     const beatsPerBar = 4;
     const [barState, setBarState] = useState<{ bar: number; beat: number }>({ bar: 1, beat: 0 });

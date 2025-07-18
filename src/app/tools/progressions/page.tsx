@@ -1,32 +1,32 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { allNotes, allScales, generateProgression, generateScale } from "@/lib/chords";
-import { NoteType } from "@/types/music";
+import { generateProgression, generateScale } from "@/tonal-lib/chords";
+import { NoteType, ChordType, ScaleType, Chord, ChordNumberReference, ScaleRecommendation, ChordProgressionReference, ChordProgression, allNotes, allChordTypes, allScaleTypes } from "@/tonal-lib/types";
 import { listProgressions } from "@/lib/progressions";
-import { ChordProgressionReference } from "@/types/progression";
 import { KeyboardVisual } from "@/components/music/keyboard-visual";
 import { ChordProgressionSection } from "@/components/music/chord-progression";
 import Layout from "@/components/Layout";
 import { AddProgressionForm } from "@/components/AddProgressionForm";
 import { EditProgressionForm } from "@/components/EditProgressionForm";
 import { AIProgressionForm } from "@/components/AIProgressionForm";
+import { ChordProgressionReference } from "@/types/progression";
 
-const allScaleOptions = Object.keys(allScales);
+const allScaleOptions = Object.keys(allScaleTypes);
 
 function camelToTitle(str: string) {
     return str.replace(/([A-Z])/g, ' $1').replace(/^./, s => s.toUpperCase());
 }
 
 const BluesPage = () => {
-    const [selectedKey, setSelectedKey] = useState<NoteType>(listProgressions[0].defaultNote);
-    const [selectedProgression, setSelectedProgression] = useState(listProgressions[0]);
+    // Use TonalLib types everywhere for consistency
+    const [selectedKey, setSelectedKey] = useState<NoteType>(listProgressions[0].defaultNote as NoteType);
+    const [selectedProgression, setSelectedProgression] = useState<ChordProgressionReference>(listProgressions[0] as ChordProgressionReference);
     const [showFormModal, setShowFormModal] = useState<{ mode: "add" | "edit" | "ai", data?: Partial<ChordProgressionReference> } | null>(null);
-    // Use ChordProgressionReference[] for customProgressions
     const [customProgressions, setCustomProgressions] = useState<ChordProgressionReference[]>([]);
-    const recommendedScaleKeys = selectedProgression.recommendedScales.map(s => s.scale);
+    const recommendedScaleKeys = selectedProgression.recommendedScales.map((s: ScaleRecommendation) => s.scale);
     const [selectedScales, setSelectedScales] = useState<string[]>(recommendedScaleKeys);
-    const progression = generateProgression(selectedProgression.progression, selectedKey);
+    const progression: ChordProgression = generateProgression(selectedProgression.progression, selectedKey);
     // Get unique chords by root and type
     const allChordsInProgression = progression
         .flat()
@@ -165,13 +165,14 @@ const BluesPage = () => {
                     </div>
                 </div>
                 <ChordProgressionSection progresssion={progression} />
+                {/*
                 <div className="flex flex-col justify-center">
                     <h2 className="text-lg mb-2">Recommended Scales:</h2>
                     <div className="flex flex-wrap justify-around gap-5">
                         {
                             uniqueKeys.map(root => (
                                 uniqueRecommendedScales.map(scaleKey => {
-                                    const scaleLogic = allScales[scaleKey as keyof typeof allScales];
+                                    const scaleLogic = allScaleTypes[scaleKey as keyof typeof allScaleTypes];
                                     return (
                                         <ScaleRecommendationSection
                                             key={`${root}-${scaleKey}`}
@@ -198,12 +199,13 @@ const BluesPage = () => {
                         ))}
                     </div>
                 </div>
+                */}
             </div>
         </Layout>
     )
 }
 
-const ScaleRecommendationSection = ({ name, notes }: { name: string, notes: NoteType[] }) => {
+const ScaleRecommendationSection = ({ name, notes }: { name: string, notes: TonalLib.NoteType[] }) => {
     // Split name into root and scale, then format scale part
     const [root, ...scaleParts] = name.split(" ");
     const scaleName = camelToTitle(scaleParts.join(" "));

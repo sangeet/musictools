@@ -1,6 +1,5 @@
 import { useState } from "react";
-import { ChordProgressionReference, ChordNumberReference, ScaleRecommendation } from "@/types/progression";
-import { NoteType } from "@/types/music";
+import { NoteType, ChordType, ScaleType, ChordNumberReference, ChordProgressionReference, allNotes, allChordTypes, allScaleTypes } from "@/tonal-lib/types";
 
 interface AIProgressionFormProps {
   onSave: (prog: ChordProgressionReference) => void;
@@ -29,7 +28,7 @@ export function AIProgressionForm({ onSave, onClose }: AIProgressionFormProps) {
       let aiName = "AI Progression";
       let aiDescription = "";
       let aiDefaultNote: NoteType = "C";
-      let aiRecommendedScales: ScaleRecommendation[] = [];
+      let aiRecommendedScales: TonalLib.ScaleRecommendation[] = [];
       if (typeof data.result === "string") {
         try {
           const json = JSON.parse(data.result);
@@ -39,7 +38,7 @@ export function AIProgressionForm({ onSave, onClose }: AIProgressionFormProps) {
           if (json.defaultNote) aiDefaultNote = json.defaultNote as NoteType;
           if (Array.isArray(json.recommendedScales)) {
             aiRecommendedScales = json.recommendedScales.filter(
-              (s: unknown): s is ScaleRecommendation => typeof s === "object" && s !== null && "scale" in s && typeof (s as ScaleRecommendation).scale === "string"
+              (s: unknown): s is TonalLib.ScaleRecommendation => typeof s === "object" && s !== null && "scale" in s && typeof (s as TonalLib.ScaleRecommendation).scale === "string"
             );
           }
         } catch {

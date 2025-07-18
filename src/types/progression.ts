@@ -1,19 +1,15 @@
-// Chord progression types
-import type { ChordType, NoteType } from "./music";
-import { ScaleType } from "./music";
+import { NoteType, ChordType, ScaleType, ChordNumberReference } from "@/tonal-lib/types";
 
-export type ChordNumberReference = {
-  number: number;
-  type: ChordType;
-};
+// Chord progression types
+// Use TonalLib types for full compatibility
 
 export type ScaleRecommendation = {
-  scale: ScaleType;
+  scale: TonalLib.ScaleType; // Use TonalJS scale type names: "major", "minor", "blues", "pentatonic", etc.
 };
 
 export type ChordProgressionReference = {
   name: string;
-  defaultNote: NoteType;
+  defaultNote: TonalLib.NoteType;
   description: string;
   source: "custom" | "default" | "ai";
   creationDate: number;

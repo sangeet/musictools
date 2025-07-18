@@ -1,6 +1,5 @@
-import { allNoteTypes, allChordTypes, ChordType, NoteType } from "@/types/music";
-import { ChordNumberReference } from "@/types/progression";
-import { generateChordFromReference } from "@/lib/chords";
+import { NoteType, ChordType, ScaleType, ChordNumberReference, ChordProgressionReference, allNotes, allChordTypes, allScaleTypes } from "@/tonal-lib/types";
+import { generateChordFromReference } from "@/tonal-lib/chords";
 
 interface ProgressionFormFieldsProps {
   name: string;
@@ -61,7 +60,7 @@ export function ProgressionFormFields(props: ProgressionFormFieldsProps) {
         <div className="flex gap-2 items-center">
           <label className="text-sm">Default Key:</label>
           <div className="flex gap-1 flex-wrap">
-            {allNoteTypes.map(n => (
+            {allNotes.map(n => (
               <button
                 key={n}
                 type="button"

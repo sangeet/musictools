@@ -1,7 +1,6 @@
 import { useState } from "react";
-import { ChordProgressionReference, ChordNumberReference } from "@/types/progression";
+import { NoteType, ChordType, ScaleType, ChordNumberReference, ChordProgressionReference, allNotes, allChordTypes, allScaleTypes } from "@/tonal-lib/types";
 import { ProgressionFormFields } from "@/components/ProgressionFormFields";
-import { ChordType, NoteType } from "@/types/music";
 
 interface AddProgressionFormProps {
   onSave: (prog: ChordProgressionReference) => void;
