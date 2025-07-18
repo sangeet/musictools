@@ -59,6 +59,9 @@ const BluesPage = () => {
         );
     }
 
+    const allProgressionOptions = [...listProgressions, ...customProgressions];
+    const selectedInOptions = allProgressionOptions.some(p => p.name === selectedProgression.name);
+
     return (
         <Layout>
             <div className="flex flex-col gap-5">
@@ -84,14 +87,17 @@ const BluesPage = () => {
                         className="button min-w-[180px]"
                         value={selectedProgression.name}
                         onChange={e => {
-                            const prog = [...listProgressions, ...customProgressions].find(p => p.name === e.target.value);
+                            const prog = allProgressionOptions.find(p => p.name === e.target.value);
                             if (prog) setSelectedProgression(prog as typeof selectedProgression);
                         }}
                     >
-                        {[...listProgressions, ...customProgressions].map((prog) => (
-                            <option key={prog.name} value={prog.name}>{prog.name}</option>
+                        {allProgressionOptions.map((prog, idx) => (
+                            <option key={prog.name + '-' + idx} value={prog.name}>{prog.name}</option>
                         ))}
                     </select>
+                    {!selectedInOptions && (
+                        <span className="text-red-500 ml-2">Selected progression not in options!</span>
+                    )}
                     <button
                         className="button ml-2"
                         onClick={() => setShowFormModal({ mode: "add" })}
@@ -116,8 +122,13 @@ const BluesPage = () => {
                     showFormModal.mode === "add" ? (
                         <AddProgressionForm
                             onSave={prog => {
-                                setCustomProgressions(prev => [...prev, prog]);
-                                setSelectedProgression(prog);
+                                setCustomProgressions(prev => {
+                                    const updated = [...prev, prog];
+                                    // Set selectedProgression to the object from the updated array
+                                    const selected = updated.find(p => p.name === prog.name) || prog;
+                                    setSelectedProgression(selected);
+                                    return updated;
+                                });
                                 setShowFormModal(null);
                             }}
                             onClose={() => setShowFormModal(null)}
@@ -128,14 +139,17 @@ const BluesPage = () => {
                             onSave={prog => {
                                 setCustomProgressions(prev => {
                                     const idx = prev.findIndex(p => p.name === showFormModal.data?.name);
+                                    let updated;
                                     if (idx !== -1) {
-                                        const updated = [...prev];
+                                        updated = [...prev];
                                         updated[idx] = prog;
-                                        return updated;
+                                    } else {
+                                        updated = [...prev, prog];
                                     }
-                                    return [...prev, prog];
+                                    const selected = updated.find(p => p.name === prog.name) || prog;
+                                    setSelectedProgression(selected);
+                                    return updated;
                                 });
-                                setSelectedProgression(prog);
                                 setShowFormModal(null);
                             }}
                             onClose={() => setShowFormModal(null)}
@@ -143,8 +157,12 @@ const BluesPage = () => {
                     ) : showFormModal.mode === "ai" ? (
                         <AIProgressionForm
                             onSave={prog => {
-                                setCustomProgressions(prev => [...prev, prog]);
-                                setSelectedProgression(prog);
+                                setCustomProgressions(prev => {
+                                    const updated = [...prev, prog];
+                                    const selected = updated.find(p => p.name === prog.name) || prog;
+                                    setSelectedProgression(selected);
+                                    return updated;
+                                });
                                 setShowFormModal(null);
                             }}
                             onClose={() => setShowFormModal(null)}
@@ -170,7 +188,7 @@ const BluesPage = () => {
                     <div className="flex flex-wrap justify-around gap-5">
                         {
                             uniqueKeys.map(root => (
-                                uniqueRecommendedScales.map(scaleKey => {
+                                selectedScales.map(scaleKey => {
                                     const scaleLogic = allScales[scaleKey as keyof typeof allScales];
                                     return (
                                         <ScaleRecommendationSection
