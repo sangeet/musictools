@@ -45,9 +45,6 @@ const BluesPage = () => {
         setSelectedScales(selectedProgression.recommendedScales.map(s => s.scale));
     }, [selectedProgression]);
 
-    // Get unique recommended scales for UI
-    const uniqueRecommendedScales = Array.from(new Set(selectedProgression.recommendedScales.map(s => s.scale)));
-
     // Get unique keys for UI
     const uniqueKeys = Array.from(new Set(progression.flat().map(chord => chord.root)));
 
@@ -71,7 +68,6 @@ const BluesPage = () => {
                         <button
                             key={`${note}-${index}`}
                             onClick={() => {
-                                console.log('Key selected:', note);
                                 setSelectedKey(note);
                             }}
                             className={`button border-2 transition-colors duration-150
