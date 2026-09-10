@@ -50,6 +50,15 @@ const Header = () => {
               CAGED
             </span>
           </Link>
+          <Link
+            href="/tools/ukulele-arranger"
+            className="text-slate-300 hover:text-amber-400 transition-colors flex items-center gap-1.5"
+          >
+            <span>AI Arranger</span>
+            <span className="px-1.5 py-0.5 text-[10px] font-bold rounded bg-purple-500/20 text-purple-300 border border-purple-500/30">
+              ✨ Beta
+            </span>
+          </Link>
           <a
             href="https://github.com/sangeet/musictools"
             target="_blank"
@@ -123,6 +132,16 @@ const Header = () => {
             className="block px-3 py-2 rounded-lg text-amber-400 hover:bg-slate-900 text-sm font-semibold"
           >
             Guitar Chord Melody (CAGED)
+          </Link>
+          <Link
+            href="/tools/ukulele-arranger"
+            onClick={() => setMobileMenuOpen(false)}
+            className="block px-3 py-2 rounded-lg text-amber-400 hover:bg-slate-900 text-sm font-semibold flex items-center justify-between"
+          >
+            <span>AI Ukulele Arranger</span>
+            <span className="px-1.5 py-0.5 text-[10px] font-bold rounded bg-purple-500/20 text-purple-300 border border-purple-500/30">
+              ✨ Beta
+            </span>
           </Link>
           <a
             href="https://github.com/sangeet/musictools"
