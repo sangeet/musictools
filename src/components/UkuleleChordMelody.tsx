@@ -3,7 +3,7 @@
 import React, { useState, useRef, useMemo, useCallback } from "react";
 
 // ==========================================
-// 1. MUSIC THEORY ENGINE & CONSTANTS
+// 1. MUSIC THEORY CONSTANTS
 // ==========================================
 const CHROMATIC_SHARPS = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
 const CHROMATIC_FLATS  = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'];
@@ -11,103 +11,26 @@ const CHROMATIC_FLATS  = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 
 interface ChordDefinition {
   name: string;
   symbol: string;
+  category?: string;
   intervals: number[];
   intervalNames: string[];
   intervalRoles: string[];
 }
 
 const CHORD_DEFINITIONS: Record<string, ChordDefinition> = {
-  maj: {
-    name: 'Major',
-    symbol: '',
-    intervals: [0, 4, 7],
-    intervalNames: ['1', '3', '5'],
-    intervalRoles: ['Root', '3rd', '5th']
-  },
-  min: {
-    name: 'Minor',
-    symbol: 'm',
-    intervals: [0, 3, 7],
-    intervalNames: ['1', 'b3', '5'],
-    intervalRoles: ['Root', 'Min 3rd', '5th']
-  },
-  '7': {
-    name: 'Dominant 7th',
-    symbol: '7',
-    intervals: [0, 4, 7, 10],
-    intervalNames: ['1', '3', '5', 'b7'],
-    intervalRoles: ['Root', '3rd', '5th', 'Dom 7th']
-  },
-  maj7: {
-    name: 'Major 7th',
-    symbol: 'maj7',
-    intervals: [0, 4, 7, 11],
-    intervalNames: ['1', '3', '5', '7'],
-    intervalRoles: ['Root', '3rd', '5th', 'Maj 7th']
-  },
-  m7: {
-    name: 'Minor 7th',
-    symbol: 'm7',
-    intervals: [0, 3, 7, 10],
-    intervalNames: ['1', 'b3', '5', 'b7'],
-    intervalRoles: ['Root', 'Min 3rd', '5th', 'Min 7th']
-  },
-  dim: {
-    name: 'Diminished',
-    symbol: 'dim',
-    intervals: [0, 3, 6],
-    intervalNames: ['1', 'b3', 'b5'],
-    intervalRoles: ['Root', 'Min 3rd', 'Dim 5th']
-  },
-  dim7: {
-    name: 'Diminished 7th',
-    symbol: 'dim7',
-    intervals: [0, 3, 6, 9],
-    intervalNames: ['1', 'b3', 'b5', 'bb7'],
-    intervalRoles: ['Root', 'Min 3rd', 'Dim 5th', 'Dim 7th']
-  },
-  m7b5: {
-    name: 'Half-Diminished',
-    symbol: 'm7b5',
-    intervals: [0, 3, 6, 10],
-    intervalNames: ['1', 'b3', 'b5', 'b7'],
-    intervalRoles: ['Root', 'Min 3rd', 'Dim 5th', 'Min 7th']
-  },
-  aug: {
-    name: 'Augmented',
-    symbol: 'aug',
-    intervals: [0, 4, 8],
-    intervalNames: ['1', '3', '#5'],
-    intervalRoles: ['Root', '3rd', 'Aug 5th']
-  },
-  sus4: {
-    name: 'Suspended 4th',
-    symbol: 'sus4',
-    intervals: [0, 5, 7],
-    intervalNames: ['1', '4', '5'],
-    intervalRoles: ['Root', '4th', '5th']
-  },
-  sus2: {
-    name: 'Suspended 2nd',
-    symbol: 'sus2',
-    intervals: [0, 2, 7],
-    intervalNames: ['1', '2', '5'],
-    intervalRoles: ['Root', '2nd', '5th']
-  },
-  '6': {
-    name: 'Major 6th',
-    symbol: '6',
-    intervals: [0, 4, 7, 9],
-    intervalNames: ['1', '3', '5', '6'],
-    intervalRoles: ['Root', '3rd', '5th', '6th']
-  },
-  m6: {
-    name: 'Minor 6th',
-    symbol: 'm6',
-    intervals: [0, 3, 7, 9],
-    intervalNames: ['1', 'b3', '5', '6'],
-    intervalRoles: ['Root', 'Min 3rd', '5th', '6th']
-  }
+  maj: { name: 'Major', symbol: '', intervals: [0, 4, 7], intervalNames: ['1', '3', '5'], intervalRoles: ['Root', '3rd', '5th'] },
+  min: { name: 'Minor', symbol: 'm', intervals: [0, 3, 7], intervalNames: ['1', 'b3', '5'], intervalRoles: ['Root', 'Min 3rd', '5th'] },
+  '7': { name: 'Dom 7th', symbol: '7', intervals: [0, 4, 7, 10], intervalNames: ['1', '3', '5', 'b7'], intervalRoles: ['Root', '3rd', '5th', 'Dom 7th'] },
+  m7: { name: 'Min 7th', symbol: 'm7', intervals: [0, 3, 7, 10], intervalNames: ['1', 'b3', '5', 'b7'], intervalRoles: ['Root', 'Min 3rd', '5th', 'Min 7th'] },
+  maj7: { name: 'Maj 7th', symbol: 'maj7', intervals: [0, 4, 7, 11], intervalNames: ['1', '3', '5', '7'], intervalRoles: ['Root', '3rd', '5th', 'Maj 7th'] },
+  dim: { name: 'Dim', symbol: 'dim', intervals: [0, 3, 6], intervalNames: ['1', 'b3', 'b5'], intervalRoles: ['Root', 'Min 3rd', 'Dim 5th'] },
+  dim7: { name: 'Dim 7th', symbol: 'dim7', intervals: [0, 3, 6, 9], intervalNames: ['1', 'b3', 'b5', 'bb7'], intervalRoles: ['Root', 'Min 3rd', 'Dim 5th', 'Dim 7th'] },
+  m7b5: { name: 'm7b5', symbol: 'm7b5', intervals: [0, 3, 6, 10], intervalNames: ['1', 'b3', 'b5', 'b7'], intervalRoles: ['Root', 'Min 3rd', 'Dim 5th', 'Min 7th'] },
+  aug: { name: 'Aug', symbol: 'aug', intervals: [0, 4, 8], intervalNames: ['1', '3', '#5'], intervalRoles: ['Root', '3rd', 'Aug 5th'] },
+  sus4: { name: 'Sus4', symbol: 'sus4', intervals: [0, 5, 7], intervalNames: ['1', '4', '5'], intervalRoles: ['Root', '4th', '5th'] },
+  sus2: { name: 'Sus2', symbol: 'sus2', intervals: [0, 2, 7], intervalNames: ['1', '2', '5'], intervalRoles: ['Root', '2nd', '5th'] },
+  '6': { name: '6th', symbol: '6', intervals: [0, 4, 7, 9], intervalNames: ['1', '3', '5', '6'], intervalRoles: ['Root', '3rd', '5th', '6th'] },
+  m6: { name: 'Min 6th', symbol: 'm6', intervals: [0, 3, 7, 9], intervalNames: ['1', 'b3', '5', '6'], intervalRoles: ['Root', 'Min 3rd', '5th', '6th'] }
 };
 
 const BASE_CAGFD_ARCHETYPES: Record<string, Array<{ name: string; frets: number[]; root: number }>> = {
@@ -134,11 +57,12 @@ const BASE_CAGFD_ARCHETYPES: Record<string, Array<{ name: string; frets: number[
   ]
 };
 
+// Tablature orientation (A string at top, G string at bottom)
 const HORIZONTAL_STRINGS = [
-  { stringNum: 1, name: 'A', midiHighG: 69, midiLowG: 69, semitone: 9, y: 30,  gauge: 2.0 }, // Top line: A4
-  { stringNum: 2, name: 'E', midiHighG: 64, midiLowG: 64, semitone: 4, y: 60,  gauge: 2.5 }, // 2nd line: E4
-  { stringNum: 3, name: 'C', midiHighG: 60, midiLowG: 60, semitone: 0, y: 90,  gauge: 3.5 }, // 3rd line: C4
-  { stringNum: 4, name: 'G', midiHighG: 67, midiLowG: 55, semitone: 7, y: 120, gauge: 2.8 }  // Bottom line: G4/G3
+  { stringNum: 1, name: 'A', midiHighG: 69, midiLowG: 69, semitone: 9, y: 22,  gauge: 1.8 },
+  { stringNum: 2, name: 'E', midiHighG: 64, midiLowG: 64, semitone: 4, y: 44,  gauge: 2.2 },
+  { stringNum: 3, name: 'C', midiHighG: 60, midiLowG: 60, semitone: 0, y: 66,  gauge: 3.0 },
+  { stringNum: 4, name: 'G', midiHighG: 67, midiLowG: 55, semitone: 7, y: 88,  gauge: 2.4 }
 ];
 
 export interface VoiceNote {
@@ -294,7 +218,7 @@ export default function UkuleleChordMelody() {
     return `${cycle[cycleIdx]} (CAGFD)`;
   }, []);
 
-  // Generate All Voicings
+  // Generate Voicings
   const voicings = useMemo(() => {
     const quality = CHORD_DEFINITIONS[qualityKey];
     if (!quality) return [];
@@ -394,7 +318,6 @@ export default function UkuleleChordMelody() {
 
     if (validVoicings.length <= 6) return validVoicings;
 
-    // Filter optimal spread across the fretboard
     const groups = [
       validVoicings.filter(v => v.minFret <= 3),
       validVoicings.filter(v => v.minFret >= 2 && v.minFret <= 5),
@@ -436,7 +359,6 @@ export default function UkuleleChordMelody() {
     return selected;
   }, [qualityKey, rootSemitone, tuning, classifyCAGFDShape]);
 
-  // Filtered Voicings
   const displayedVoicings = useMemo(() => {
     if (melodyFilter === 'all') return voicings;
     return voicings.filter(v => v.topVoice.semitone === melodyFilter);
@@ -448,7 +370,7 @@ export default function UkuleleChordMelody() {
   // Logarithmic fret positions
   const numFrets = 14;
   const width = 880;
-  const height = 150;
+  const height = 110;
   const nutWidth = 14;
   const fret0Width = 45;
   const startX = nutWidth + fret0Width;
@@ -464,117 +386,71 @@ export default function UkuleleChordMelody() {
   }, [startX, fretboardWidth]);
 
   return (
-    <div className="space-y-6">
-      {/* Header Bar */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between border-b border-slate-800 pb-5 gap-4">
-        <div>
-          <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-amber-500 to-amber-700 flex items-center justify-center text-2xl shadow-lg shadow-amber-900/30">
-              🌴
-            </div>
-            <div>
-              <h1 className="text-2xl font-extrabold text-white tracking-tight flex items-center gap-2">
-                Ukulele Chord Melody Studio
-                <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/30">
-                  CAGFD System
-                </span>
-              </h1>
-              <p className="text-xs sm:text-sm text-slate-400">
-                Interactive Inversion Navigator &amp; Top-Melody Harmonizer for G-C-E-A Ukulele
-              </p>
-            </div>
+    <div className="space-y-4">
+      {/* 1. ULTRA-COMPACT APP BAR: Instrument, Tuning, & Display Controls */}
+      <div className="flex flex-wrap items-center justify-between gap-3 bg-slate-900/90 border border-slate-800 rounded-xl px-4 py-2.5 shadow-sm">
+        <div className="flex items-center gap-2.5">
+          <span className="text-xl">🌴</span>
+          <div className="flex items-center gap-2">
+            <span className="font-bold text-white text-sm tracking-tight">Ukulele Chord Melody</span>
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/30">
+              CAGFD
+            </span>
           </div>
         </div>
 
-        {/* Quick Toggles */}
-        <div className="flex flex-wrap items-center gap-3">
-          {/* Tuning toggle */}
-          <div className="bg-slate-900 border border-slate-800 rounded-xl p-1 flex items-center text-xs font-medium">
+        <div className="flex items-center gap-2 text-xs">
+          {/* Tuning */}
+          <div className="bg-slate-950 border border-slate-800 rounded-lg p-0.5 flex items-center font-medium">
             <button
-              className={`px-3 py-1.5 rounded-lg font-bold transition-all shadow-sm ${
-                tuning === 'high-g' ? 'bg-amber-500 text-slate-950' : 'text-slate-400 hover:text-white'
-              }`}
+              className={`px-2 py-1 rounded text-[11px] font-bold transition ${tuning === 'high-g' ? 'bg-amber-500 text-slate-950' : 'text-slate-400 hover:text-white'}`}
               onClick={() => setTuning('high-g')}
             >
-              High-G (G4)
+              High-G
             </button>
             <button
-              className={`px-3 py-1.5 rounded-lg font-bold transition-all shadow-sm ${
-                tuning === 'low-g' ? 'bg-amber-500 text-slate-950' : 'text-slate-400 hover:text-white'
-              }`}
+              className={`px-2 py-1 rounded text-[11px] font-bold transition ${tuning === 'low-g' ? 'bg-amber-500 text-slate-950' : 'text-slate-400 hover:text-white'}`}
               onClick={() => setTuning('low-g')}
             >
-              Low-G (G3)
+              Low-G
             </button>
           </div>
 
           {/* Label Mode */}
-          <div className="bg-slate-900 border border-slate-800 rounded-xl p-1 flex items-center text-xs font-medium">
+          <div className="bg-slate-950 border border-slate-800 rounded-lg p-0.5 flex items-center font-medium">
             <button
-              className={`px-3 py-1.5 rounded-lg font-bold transition-all shadow-sm ${
-                labelMode === 'notes' ? 'bg-slate-800 text-white' : 'text-slate-400 hover:text-white'
-              }`}
+              className={`px-2 py-1 rounded text-[11px] font-bold transition ${labelMode === 'notes' ? 'bg-slate-800 text-white' : 'text-slate-400 hover:text-white'}`}
               onClick={() => setLabelMode('notes')}
             >
               Notes
             </button>
             <button
-              className={`px-3 py-1.5 rounded-lg font-bold transition-all shadow-sm ${
-                labelMode === 'degrees' ? 'bg-slate-800 text-white' : 'text-slate-400 hover:text-white'
-              }`}
+              className={`px-2 py-1 rounded text-[11px] font-bold transition ${labelMode === 'degrees' ? 'bg-slate-800 text-white' : 'text-slate-400 hover:text-white'}`}
               onClick={() => setLabelMode('degrees')}
             >
               Intervals
             </button>
           </div>
 
-          {/* Guide Modal Trigger */}
+          {/* Guide button */}
           <button
             onClick={() => setHelpOpen(true)}
-            className="p-2 text-slate-400 hover:text-amber-400 hover:bg-slate-900 rounded-xl border border-slate-800 transition"
-            title="CAGFD & Chord Melody Guide"
+            className="p-1.5 text-slate-400 hover:text-amber-400 bg-slate-950 hover:bg-slate-800 rounded-lg border border-slate-800 transition"
+            title="CAGFD Guide"
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </button>
         </div>
       </div>
 
-      {/* Chord Controls Card */}
-      <div className="bg-slate-900/90 border border-slate-800/80 rounded-2xl p-5 shadow-xl space-y-4">
-        {/* 1. Root Note Selector */}
-        <div>
-          <div className="flex items-center justify-between mb-2">
-            <label className="text-xs font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-2">
-              <span>1. Choose Root Note</span>
-              <span className="text-amber-400 font-bold font-mono text-sm">{getNoteName(rootSemitone)}</span>
-            </label>
-            <div className="flex items-center gap-1.5 text-xs">
-              <span className="text-slate-500">Display:</span>
-              <button
-                onClick={() => setAccidental('b')}
-                className={`px-2 py-0.5 rounded font-bold border transition ${
-                  accidental === 'b'
-                    ? 'bg-slate-800 text-amber-400 border-slate-700'
-                    : 'bg-slate-950 text-slate-400 border-slate-800 hover:text-white'
-                }`}
-              >
-                &flat; Flats
-              </button>
-              <button
-                onClick={() => setAccidental('#')}
-                className={`px-2 py-0.5 rounded font-bold border transition ${
-                  accidental === '#'
-                    ? 'bg-slate-800 text-amber-400 border-slate-700'
-                    : 'bg-slate-950 text-slate-400 border-slate-800 hover:text-white'
-                }`}
-              >
-                &sharp; Sharps
-              </button>
-            </div>
-          </div>
-          <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-12 gap-1.5">
+      {/* 2. SLIM, SHRUNK SELECTOR & MELODY FILTER TOOLBAR (Single Consolidated Card) */}
+      <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-3 shadow-md space-y-2.5">
+        {/* Row 1: Shrunk Root Notes + Flat/Sharp Toggle */}
+        <div className="flex items-center gap-2 overflow-x-auto pb-1">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 shrink-0 mr-1">Root:</span>
+          <div className="flex items-center gap-1 shrink-0">
             {Array.from({ length: 12 }, (_, i) => {
               const note = getNoteName(i);
               const isSelected = i === rootSemitone;
@@ -585,9 +461,9 @@ export default function UkuleleChordMelody() {
                     setRootSemitone(i);
                     setMelodyFilter('all');
                   }}
-                  className={`py-2 rounded-xl font-mono text-sm font-bold transition-all flex flex-col items-center justify-center border ${
+                  className={`w-7 h-7 rounded-lg font-mono text-xs font-bold transition-all flex items-center justify-center border ${
                     isSelected
-                      ? 'bg-amber-500 text-slate-950 border-amber-400 shadow-lg shadow-amber-500/30 scale-105 z-10'
+                      ? 'bg-amber-500 text-slate-950 border-amber-400 shadow scale-105 z-10'
                       : 'bg-slate-800/80 text-slate-300 border-slate-700/60 hover:bg-slate-700 hover:text-white'
                   }`}
                 >
@@ -596,156 +472,149 @@ export default function UkuleleChordMelody() {
               );
             })}
           </div>
+
+          <div className="flex items-center gap-1 ml-auto shrink-0 pl-2">
+            <button
+              onClick={() => setAccidental(accidental === 'b' ? '#' : 'b')}
+              className="px-2 py-1 rounded bg-slate-950 text-amber-400 font-mono text-xs border border-slate-800 hover:border-slate-700 font-bold"
+              title="Toggle Accidentals"
+            >
+              {accidental === 'b' ? '♭' : '♯'}
+            </button>
+          </div>
         </div>
 
-        {/* 2. Chord Quality Selector */}
-        <div>
-          <label className="text-xs font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-2 mb-2">
-            <span>2. Choose Chord Quality</span>
-            <span className="text-emerald-400 font-bold font-mono">{activeQuality.name}</span>
-          </label>
-          <div className="flex flex-wrap gap-1.5">
-            {Object.entries(CHORD_DEFINITIONS).map(([key, chord]) => {
-              const isSelected = key === qualityKey;
+        {/* Row 2: Shrunk Qualities Carousel */}
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 shrink-0 mr-1">Type:</span>
+          {Object.entries(CHORD_DEFINITIONS).map(([key, chord]) => {
+            const isSelected = key === qualityKey;
+            return (
+              <button
+                key={key}
+                onClick={() => {
+                  setQualityKey(key);
+                  setMelodyFilter('all');
+                }}
+                className={`px-2.5 py-1 rounded-md text-xs font-semibold whitespace-nowrap transition border ${
+                  isSelected
+                    ? 'bg-emerald-500 text-slate-950 border-emerald-400 shadow-sm font-bold scale-105'
+                    : 'bg-slate-800/70 text-slate-300 border-slate-700/50 hover:bg-slate-700 hover:text-white'
+                }`}
+              >
+                {chord.name}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Row 3: Active Chord + Melody Filter Pills (Consolidated inline) */}
+        <div className="pt-2 border-t border-slate-800 flex flex-wrap items-center justify-between gap-2.5">
+          <div className="flex items-center gap-2.5">
+            <span className="px-2.5 py-0.5 rounded-lg bg-amber-500/15 border border-amber-500/30 text-amber-300 font-extrabold text-base font-mono">
+              {chordName}
+            </span>
+            <div className="flex items-center gap-1">
+              {activeQuality.intervals.map((interval) => {
+                const semitone = (rootSemitone + interval) % 12;
+                const noteName = getNoteName(semitone);
+                const info = getIntervalInfo(interval, activeQuality);
+                return (
+                  <span
+                    key={interval}
+                    className={`px-1.5 py-0.5 rounded text-[11px] font-mono font-semibold ${info.colorClass}`}
+                  >
+                    {noteName} <span className="opacity-75 text-[9px]">({info.name})</span>
+                  </span>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Melody Filter Inline */}
+          <div className="flex items-center gap-1.5 overflow-x-auto">
+            <span className="text-[10px] uppercase font-bold text-amber-400 whitespace-nowrap flex items-center gap-1">
+              <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M18 3a1 1 0 00-1.196-.98l-10 2A1 1 0 006 5v9.114A4.369 4.369 0 005 14c-1.657 0-3 .895-3 2s1.343 2 3 2 3-.895 3-2V7.82l8-1.6v5.894A4.37 4.37 0 0015 12c-1.657 0-3 .895-3 2s1.343 2 3 2 3-.895 3-2V3z" />
+              </svg>
+              Top Melody:
+            </span>
+            <button
+              onClick={() => setMelodyFilter('all')}
+              className={`px-2 py-0.5 rounded text-[11px] font-semibold transition ${
+                melodyFilter === 'all'
+                  ? 'bg-amber-500 text-slate-950 font-bold'
+                  : 'bg-slate-800 text-slate-400 hover:text-white'
+              }`}
+            >
+              All
+            </button>
+            {activeQuality.intervals.map((interval) => {
+              const semitone = (rootSemitone + interval) % 12;
+              const noteName = getNoteName(semitone);
+              const info = getIntervalInfo(interval, activeQuality);
+              const isSelected = melodyFilter === semitone;
               return (
                 <button
-                  key={key}
-                  onClick={() => {
-                    setQualityKey(key);
-                    setMelodyFilter('all');
-                  }}
-                  className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all border ${
+                  key={interval}
+                  onClick={() => setMelodyFilter(semitone)}
+                  className={`px-2 py-0.5 rounded text-[11px] font-semibold flex items-center gap-1 transition border ${
                     isSelected
-                      ? 'bg-emerald-500 text-slate-950 border-emerald-400 shadow-md shadow-emerald-500/20 scale-105'
-                      : 'bg-slate-800/70 text-slate-300 border-slate-700/50 hover:bg-slate-700 hover:text-white'
+                      ? 'bg-amber-400 text-slate-950 border-amber-300 font-bold'
+                      : 'bg-slate-800 text-slate-300 border-slate-700 hover:text-white'
                   }`}
                 >
-                  {chord.name} ({chord.symbol || 'maj'})
+                  <span className="w-1.5 h-1.5 rounded-full inline-block" style={{ backgroundColor: info.bgHex }}></span>
+                  <span>{noteName}</span>
                 </button>
               );
             })}
           </div>
         </div>
-
-        {/* 3. Chord Melody Focus & Filter */}
-        <div className="pt-3 border-t border-slate-800/80 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="px-3.5 py-2 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 font-extrabold text-2xl font-mono tracking-tight">
-              {chordName}
-            </div>
-            <div>
-              <div className="text-xs text-slate-400 font-medium">Chord Tones:</div>
-              <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-                {activeQuality.intervals.map((interval) => {
-                  const semitone = (rootSemitone + interval) % 12;
-                  const noteName = getNoteName(semitone);
-                  const info = getIntervalInfo(interval, activeQuality);
-                  return (
-                    <div
-                      key={interval}
-                      className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-mono font-medium ${info.colorClass}`}
-                    >
-                      <span>{noteName}</span>
-                      <span className="text-[10px] opacity-80">({info.name})</span>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-
-          {/* Melody Note Filter */}
-          <div className="flex flex-col sm:flex-row sm:items-center gap-2 bg-slate-950/80 p-2.5 rounded-xl border border-slate-800">
-            <span className="text-xs font-bold text-amber-400 flex items-center gap-1.5 whitespace-nowrap">
-              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                <path d="M18 3a1 1 0 00-1.196-.98l-10 2A1 1 0 006 5v9.114A4.369 4.369 0 005 14c-1.657 0-3 .895-3 2s1.343 2 3 2 3-.895 3-2V7.82l8-1.6v5.894A4.37 4.37 0 0015 12c-1.657 0-3 .895-3 2s1.343 2 3 2 3-.895 3-2V3z" />
-              </svg>
-              Top Melody Note Filter:
-            </span>
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <button
-                onClick={() => setMelodyFilter('all')}
-                className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition ${
-                  melodyFilter === 'all'
-                    ? 'bg-amber-500 text-slate-950 shadow-sm font-bold'
-                    : 'bg-slate-800 text-slate-400 hover:text-white'
-                }`}
-              >
-                All Voicings
-              </button>
-              {activeQuality.intervals.map((interval) => {
-                const semitone = (rootSemitone + interval) % 12;
-                const noteName = getNoteName(semitone);
-                const info = getIntervalInfo(interval, activeQuality);
-                const isSelected = melodyFilter === semitone;
-                return (
-                  <button
-                    key={interval}
-                    onClick={() => setMelodyFilter(semitone)}
-                    className={`px-2.5 py-1 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition border ${
-                      isSelected
-                        ? 'bg-amber-400 text-slate-950 border-amber-300 font-bold shadow-md shadow-amber-400/20'
-                        : 'bg-slate-800/80 text-slate-300 border-slate-700/60 hover:bg-slate-700 hover:text-white'
-                    }`}
-                  >
-                    <span className="w-2 h-2 rounded-full inline-block" style={{ backgroundColor: info.bgHex }}></span>
-                    <span>Melody: <strong>{noteName}</strong> ({info.name})</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        </div>
       </div>
 
-      {/* Horizontal Fretboard Panorama */}
-      <div className="bg-slate-900/90 border border-slate-800/80 rounded-2xl p-5 shadow-xl space-y-3">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-          <div>
-            <h2 className="text-sm font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
-              <span>Interactive Fretboard (Frets 0 &ndash; 14)</span>
-              <span className="text-xs font-semibold text-amber-400 font-mono bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">
-                Bottom to Top: G &middot; C &middot; E &middot; A
-              </span>
-            </h2>
-            <p className="text-xs text-slate-400">
-              Standard tablature orientation (A string at top, G string at bottom). Showing <strong className="text-amber-400">{getNoteName(rootSemitone)} {activeQuality.name}</strong> across the neck. Click any note to play.
-            </p>
+      {/* 3. FRETBOARD RIGHT AT TOP (Sleek, Compact, Immediately Accessible) */}
+      <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-3 shadow-md space-y-2">
+        <div className="flex items-center justify-between text-xs text-slate-400">
+          <div className="flex items-center gap-2">
+            <span className="font-bold text-slate-300 uppercase tracking-wider text-[11px]">Fretboard</span>
+            <span className="text-[10px] text-amber-400 font-mono bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20">
+              Bottom to Top: G · C · E · A
+            </span>
           </div>
-          {/* Legend */}
-          <div className="flex items-center gap-3 text-xs flex-wrap">
-            <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-rose-500 inline-block shadow-sm shadow-rose-500/50"></span> Root (1)</span>
-            <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-amber-400 inline-block shadow-sm shadow-amber-400/50"></span> 3rd</span>
-            <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-sky-400 inline-block shadow-sm shadow-sky-400/50"></span> 5th</span>
-            <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-purple-400 inline-block shadow-sm shadow-purple-400/50"></span> 7th / Ext</span>
+          <div className="flex items-center gap-2.5 text-[10px]">
+            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-rose-500 inline-block"></span> 1 (Root)</span>
+            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-amber-400 inline-block"></span> 3rd</span>
+            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-sky-400 inline-block"></span> 5th</span>
+            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-purple-400 inline-block"></span> 7th</span>
           </div>
         </div>
 
-        {/* Fretboard SVG Container */}
-        <div className="overflow-x-auto pb-2 pt-1 -mx-2 px-2">
-          <div className="min-w-[800px] rounded-xl border-2 border-slate-700/80 p-3 select-none relative bg-gradient-to-b from-[#181512] via-[#26211d] to-[#151311] shadow-inner">
-            <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-auto drop-shadow-lg" style={{ userSelect: 'none' }}>
+        {/* Fretboard SVG */}
+        <div className="overflow-x-auto pb-1">
+          <div className="min-w-[760px] rounded-lg border border-slate-700/80 p-2.5 select-none relative bg-gradient-to-b from-[#181512] via-[#241f1c] to-[#151311] shadow-inner">
+            <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-auto" style={{ userSelect: 'none' }}>
               {/* Markers */}
-              <g opacity="0.6">
-                <circle cx={(fretX[4] + fretX[5]) / 2} cy="75" r="4.5" fill="#f8fafc" opacity="0.75" />
-                <circle cx={(fretX[6] + fretX[7]) / 2} cy="75" r="4.5" fill="#f8fafc" opacity="0.75" />
-                <circle cx={(fretX[9] + fretX[10]) / 2} cy="75" r="4.5" fill="#f8fafc" opacity="0.75" />
-                <circle cx={(fretX[11] + fretX[12]) / 2} cy="50" r="4" fill="#f8fafc" opacity="0.85" />
-                <circle cx={(fretX[11] + fretX[12]) / 2} cy="100" r="4" fill="#f8fafc" opacity="0.85" />
+              <g opacity="0.55">
+                <circle cx={(fretX[4] + fretX[5]) / 2} cy="55" r="4" fill="#f8fafc" />
+                <circle cx={(fretX[6] + fretX[7]) / 2} cy="55" r="4" fill="#f8fafc" />
+                <circle cx={(fretX[9] + fretX[10]) / 2} cy="55" r="4" fill="#f8fafc" />
+                <circle cx={(fretX[11] + fretX[12]) / 2} cy="38" r="3.5" fill="#f8fafc" />
+                <circle cx={(fretX[11] + fretX[12]) / 2} cy="72" r="3.5" fill="#f8fafc" />
               </g>
 
               {/* Nut */}
-              <rect x={nutWidth} y="15" width="10" height="120" rx="3" fill="#e2e8f0" stroke="#94a3b8" strokeWidth="1.5" />
-              <text x="7" y="78" fill="#94a3b8" fontSize="10" fontFamily="JetBrains Mono, monospace" fontWeight="bold" textAnchor="middle" transform="rotate(-90 7 78)">NUT</text>
+              <rect x={nutWidth} y="10" width="8" height="90" rx="2" fill="#e2e8f0" stroke="#94a3b8" strokeWidth="1" />
+              <text x="7" y="58" fill="#94a3b8" fontSize="9" fontFamily="JetBrains Mono, monospace" fontWeight="bold" textAnchor="middle" transform="rotate(-90 7 58)">NUT</text>
 
               {/* Fret Wires */}
               {fretX.map((x, f) => {
                 if (f === 0) return null;
                 return (
                   <g key={`fret-${f}`}>
-                    <line x1={x} y1="18" x2={x} y2="132" stroke="#cbd5e1" strokeWidth="2.5" />
-                    <line x1={x + 1} y1="18" x2={x + 1} y2="132" stroke="#475569" strokeWidth="1" />
-                    <text x={(fretX[f - 1] + x) / 2} y="145" fill="#64748b" fontSize="10" fontFamily="JetBrains Mono, monospace" fontWeight="bold" textAnchor="middle">
+                    <line x1={x} y1="12" x2={x} y2="98" stroke="#cbd5e1" strokeWidth="2" />
+                    <line x1={x + 1} y1="12" x2={x + 1} y2="98" stroke="#475569" strokeWidth="0.8" />
+                    <text x={(fretX[f - 1] + x) / 2} y="107" fill="#64748b" fontSize="9" fontFamily="JetBrains Mono, monospace" fontWeight="bold" textAnchor="middle">
                       {f}
                     </text>
                   </g>
@@ -755,9 +624,9 @@ export default function UkuleleChordMelody() {
               {/* Strings */}
               {HORIZONTAL_STRINGS.map((str) => (
                 <g key={`str-${str.name}`}>
-                  <line x1={nutWidth + 10} y1={str.y} x2={width - 15} y2={str.y} stroke="#1e293b" strokeWidth={str.gauge + 2} opacity="0.8" />
-                  <line x1={nutWidth + 10} y1={str.y} x2={width - 15} y2={str.y} stroke="#f1f5f9" strokeWidth={str.gauge} />
-                  <text x="2" y={str.y + 4} fill="#cbd5e1" fontSize="11" fontFamily="JetBrains Mono, monospace" fontWeight="bold">
+                  <line x1={nutWidth + 8} y1={str.y} x2={width - 15} y2={str.y} stroke="#1e293b" strokeWidth={str.gauge + 1.5} opacity="0.8" />
+                  <line x1={nutWidth + 8} y1={str.y} x2={width - 15} y2={str.y} stroke="#f1f5f9" strokeWidth={str.gauge} />
+                  <text x="2" y={str.y + 3.5} fill="#cbd5e1" fontSize="10" fontFamily="JetBrains Mono, monospace" fontWeight="bold">
                     {str.name}
                   </text>
                 </g>
@@ -776,7 +645,7 @@ export default function UkuleleChordMelody() {
                     const isChordTone = targetSemitones.has(semitone);
                     if (!isChordTone) return null;
 
-                    const cx = f === 0 ? nutWidth + 5 : (fretX[f - 1] + fretX[f]) / 2;
+                    const cx = f === 0 ? nutWidth + 4 : (fretX[f - 1] + fretX[f]) / 2;
                     const intervalFromRoot = (semitone - rootSemitone + 12) % 12;
                     const info = getIntervalInfo(intervalFromRoot, activeQuality);
                     const isMelodyHighlighted = melodyFilter !== 'all' && melodyFilter === semitone;
@@ -789,22 +658,22 @@ export default function UkuleleChordMelody() {
                         onClick={() => playNote(midiPitch, 0, 1.8)}
                       >
                         {isMelodyHighlighted && (
-                          <circle cx={cx} cy={y} r="14.5" fill="none" stroke="#fbbf24" strokeWidth="2.5" className="animate-pulse" />
+                          <circle cx={cx} cy={y} r="12.5" fill="none" stroke="#fbbf24" strokeWidth="2" className="animate-pulse" />
                         )}
                         <circle
                           cx={cx}
                           cy={y}
-                          r="10.5"
+                          r="9"
                           fill={info.bgHex}
                           stroke="#0f172a"
-                          strokeWidth="1.8"
-                          className="transition-all duration-150 group-hover:stroke-white group-hover:stroke-[2.2px] drop-shadow"
+                          strokeWidth="1.5"
+                          className="transition-all duration-150 group-hover:stroke-white group-hover:stroke-[2px] drop-shadow"
                         />
                         <text
                           x={cx}
-                          y={y + 3.8}
+                          y={y + 3.2}
                           fill={info.name === '1' ? '#ffffff' : '#090d16'}
-                          fontSize="9.5"
+                          fontSize="8.5"
                           fontFamily="JetBrains Mono, monospace"
                           fontWeight="bold"
                           textAnchor="middle"
@@ -822,43 +691,35 @@ export default function UkuleleChordMelody() {
         </div>
       </div>
 
-      {/* Voicings Grid Section */}
-      <div className="space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-          <div>
-            <h2 className="text-base font-bold text-white flex items-center gap-2">
-              <span>CAGFD Inversion Voicings</span>
-              <span className="px-2.5 py-0.5 rounded-full bg-slate-800 text-amber-400 text-xs font-mono font-bold border border-slate-700">
-                {displayedVoicings.length} {displayedVoicings.length === 1 ? 'Voicing' : 'Voicings'}
-              </span>
+      {/* 4. VOICINGS IMMEDIATELY BELOW (Zero scrolling needed to see positions!) */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <h2 className="text-sm font-bold text-white uppercase tracking-wider">
+              CAGFD Voicings
             </h2>
-            <p className="text-xs sm:text-sm text-slate-400">
-              Ergonomic ukulele voicings ordered from open/nut positions up the neck. Click <strong className="text-amber-400">Strum</strong> to preview.
-            </p>
+            <span className="px-2 py-0.5 rounded-full bg-slate-800 text-amber-400 text-xs font-mono font-bold border border-slate-700">
+              {displayedVoicings.length} {displayedVoicings.length === 1 ? 'Shape' : 'Shapes'}
+            </span>
           </div>
 
-          {melodyFilter !== 'all' && (
-            <div className="flex items-center gap-2 text-xs bg-amber-500/10 text-amber-300 px-3 py-1.5 rounded-xl border border-amber-500/30">
-              <span>Filtering by Top Melody Note: <strong className="underline font-mono">{getNoteName(Number(melodyFilter))}</strong></span>
-              <button onClick={() => setMelodyFilter('all')} className="ml-1.5 text-slate-400 hover:text-white font-bold">&times; Clear</button>
-            </div>
-          )}
+          <span className="text-xs text-slate-400">
+            Click <strong className="text-amber-400">Strum</strong> or chord box to hear
+          </span>
         </div>
 
         {displayedVoicings.length === 0 ? (
-          <div className="py-12 text-center text-slate-400 bg-slate-900/50 rounded-2xl border border-slate-800 space-y-2">
-            <div className="text-3xl">🔍</div>
-            <p className="font-medium text-white">No voicings found with {getNoteName(Number(melodyFilter))} as the highest melody note.</p>
-            <p className="text-xs text-slate-500">Try selecting another chord tone or click &quot;All Voicings&quot; to see all positions.</p>
+          <div className="py-8 text-center text-slate-400 bg-slate-900/50 rounded-xl border border-slate-800 space-y-2">
+            <p className="font-medium text-white text-sm">No voicings with {getNoteName(Number(melodyFilter))} on top.</p>
             <button
               onClick={() => setMelodyFilter('all')}
-              className="mt-2 px-3.5 py-1.5 bg-amber-500 text-slate-950 font-bold text-xs rounded-xl hover:bg-amber-400 transition"
+              className="px-3 py-1 bg-amber-500 text-slate-950 font-bold text-xs rounded-lg hover:bg-amber-400 transition"
             >
               Reset Filter
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-7 gap-3">
             {displayedVoicings.map((voicing, vIdx) => {
               const topSemi = voicing.topVoice.semitone;
               const topName = getNoteName(topSemi);
@@ -869,40 +730,32 @@ export default function UkuleleChordMelody() {
               return (
                 <div
                   key={`voicing-${vIdx}`}
-                  className={`bg-slate-900/90 border rounded-2xl p-4 flex flex-col justify-between hover:border-amber-500/50 hover:shadow-xl hover:shadow-amber-500/5 transition-all group ${
-                    isFiltered ? 'border-amber-500/80 bg-amber-950/10' : 'border-slate-800'
+                  className={`bg-slate-900/90 border rounded-xl p-3 flex flex-col justify-between hover:border-amber-500/50 hover:shadow-lg hover:shadow-amber-500/5 transition-all group ${
+                    isFiltered ? 'border-amber-500/80 bg-amber-950/15' : 'border-slate-800'
                   }`}
                 >
-                  <div className="space-y-3">
-                    <div className="flex items-start justify-between gap-1">
-                      <div>
-                        <span className="inline-block px-2 py-0.5 rounded text-[11px] font-bold bg-amber-500/15 text-amber-400 border border-amber-500/30">
-                          {voicing.cagfdShape}
-                        </span>
-                        <h3 className="text-xs text-slate-400 mt-1 font-medium truncate" title={voicing.inversionLabel}>
-                          {voicing.inversionLabel.split('(')[0].trim()}
-                        </h3>
-                      </div>
-                      <span className="text-xs font-mono font-bold text-slate-400 bg-slate-950 px-2 py-0.5 rounded-lg border border-slate-800">
+                  <div className="space-y-2">
+                    {/* Top: Shape name & Fret */}
+                    <div className="flex items-center justify-between text-[11px]">
+                      <span className="px-1.5 py-0.5 rounded font-bold bg-amber-500/15 text-amber-400 border border-amber-500/30 truncate max-w-[90px]">
+                        {voicing.cagfdShape.split(' ')[0]}
+                      </span>
+                      <span className="font-mono text-slate-400 font-bold bg-slate-950 px-1.5 py-0.5 rounded border border-slate-800 text-[10px]">
                         Fret {voicing.minFret}
                       </span>
                     </div>
 
-                    <div className="p-2 rounded-xl bg-slate-950 border border-slate-800/80 flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span className="text-[10px] uppercase font-bold text-slate-400">Melody:</span>
-                        <span className={`px-2 py-0.5 rounded text-xs font-mono font-bold ${topInfo.colorClass}`}>
-                          {topName} ({topInfo.name})
-                        </span>
-                      </div>
-                      <span className="text-[10px] text-slate-400 font-mono">
-                        Str {voicing.topVoice.string}
+                    {/* Melody Badge */}
+                    <div className="px-1.5 py-1 rounded-lg bg-slate-950 border border-slate-800 flex items-center justify-between text-[11px]">
+                      <span className="text-[9px] uppercase font-bold text-slate-400">Melody:</span>
+                      <span className={`px-1.5 py-0.2 rounded font-mono font-bold text-[10px] ${topInfo.colorClass}`}>
+                        {topName} ({topInfo.name})
                       </span>
                     </div>
 
-                    {/* Mini Chord Diagram */}
+                    {/* Mini Chord Box */}
                     <div
-                      className="py-1 flex justify-center cursor-pointer"
+                      className="flex justify-center cursor-pointer py-0.5"
                       onClick={() => strumChord(voicing.frets)}
                       title="Click to Strum"
                     >
@@ -917,18 +770,19 @@ export default function UkuleleChordMelody() {
                       />
                     </div>
 
-                    {/* Tablature notation */}
-                    <div className="text-center font-mono text-xs font-bold text-slate-300 bg-slate-950/60 py-1.5 rounded-lg border border-slate-800/60">
-                      <span className="text-slate-500 text-[10px] mr-1">TAB:</span> [ {voicing.frets.join(' · ')} ]
+                    {/* Tab Notation */}
+                    <div className="text-center font-mono text-[11px] font-bold text-slate-300 bg-slate-950/60 py-1 rounded border border-slate-800/60">
+                      [ {voicing.frets.join(' ')} ]
                     </div>
                   </div>
 
-                  <div className="pt-3 mt-3 border-t border-slate-800/80 flex items-center gap-2">
+                  {/* Strum button */}
+                  <div className="pt-2 mt-2 border-t border-slate-800/80">
                     <button
                       onClick={() => strumChord(voicing.frets)}
-                      className="w-full py-2 px-3 rounded-xl bg-slate-800 hover:bg-amber-500 hover:text-slate-950 text-slate-200 text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm"
+                      className="w-full py-1.5 rounded-lg bg-slate-800 hover:bg-amber-500 hover:text-slate-950 text-slate-200 text-xs font-bold transition flex items-center justify-center gap-1 shadow-sm"
                     >
-                      <svg className="w-4 h-4 text-amber-400 group-hover:text-slate-950 transition" fill="currentColor" viewBox="0 0 20 20">
+                      <svg className="w-3.5 h-3.5 text-amber-400 group-hover:text-slate-950" fill="currentColor" viewBox="0 0 20 20">
                         <path d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" />
                       </svg>
                       <span>Strum</span>
@@ -941,52 +795,47 @@ export default function UkuleleChordMelody() {
         )}
       </div>
 
-      {/* Chord Melody Guide Modal */}
+      {/* Guide Modal */}
       {helpOpen && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 max-w-2xl w-full rounded-2xl p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                <span>The Ukulele CAGFD System Explained</span>
+          <div className="bg-slate-900 border border-slate-800 max-w-xl w-full rounded-2xl p-5 shadow-2xl space-y-3 max-h-[90vh] overflow-y-auto text-xs sm:text-sm">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-2.5">
+              <h3 className="text-base font-bold text-white flex items-center gap-2">
+                <span>Ukulele CAGFD &amp; Chord Melody</span>
               </h3>
-              <button onClick={() => setHelpOpen(false)} className="text-slate-400 hover:text-white text-2xl leading-none">
+              <button onClick={() => setHelpOpen(false)} className="text-slate-400 hover:text-white text-xl leading-none">
                 &times;
               </button>
             </div>
-            <div className="space-y-3 text-sm text-slate-300 leading-relaxed">
+            <div className="space-y-2.5 text-slate-300 leading-relaxed">
               <p>
-                Guitarists use the famous <strong>CAGED</strong> system. Because the standard ukulele is tuned <strong>G-C-E-A</strong> (equivalent to a guitar capoed at the 5th fret without the bottom two strings), the open chord shapes cycle in the order:
+                In chord melody, the listener hears the highest note as the melody line. On the ukulele (G-C-E-A), that note is played on String 1 or 2.
               </p>
-              <div className="flex items-center justify-center gap-2 py-2 flex-wrap">
-                <span className="px-3 py-1 bg-amber-500/20 text-amber-300 font-bold font-mono rounded-lg border border-amber-500/30">C-Shape</span>
+              <div className="flex items-center justify-center gap-1.5 py-1 flex-wrap font-mono font-bold text-xs">
+                <span className="px-2 py-0.5 bg-amber-500/20 text-amber-300 rounded border border-amber-500/30">C-Shape</span>
                 <span className="text-slate-500">&rarr;</span>
-                <span className="px-3 py-1 bg-amber-500/20 text-amber-300 font-bold font-mono rounded-lg border border-amber-500/30">A-Shape</span>
+                <span className="px-2 py-0.5 bg-amber-500/20 text-amber-300 rounded border border-amber-500/30">A-Shape</span>
                 <span className="text-slate-500">&rarr;</span>
-                <span className="px-3 py-1 bg-amber-500/20 text-amber-300 font-bold font-mono rounded-lg border border-amber-500/30">G-Shape</span>
+                <span className="px-2 py-0.5 bg-amber-500/20 text-amber-300 rounded border border-amber-500/30">G-Shape</span>
                 <span className="text-slate-500">&rarr;</span>
-                <span className="px-3 py-1 bg-amber-500/20 text-amber-300 font-bold font-mono rounded-lg border border-amber-500/30">F-Shape</span>
+                <span className="px-2 py-0.5 bg-amber-500/20 text-amber-300 rounded border border-amber-500/30">F-Shape</span>
                 <span className="text-slate-500">&rarr;</span>
-                <span className="px-3 py-1 bg-amber-500/20 text-amber-300 font-bold font-mono rounded-lg border border-amber-500/30">D-Shape</span>
-                <span className="text-slate-500">&rarr; (repeats)</span>
+                <span className="px-2 py-0.5 bg-amber-500/20 text-amber-300 rounded border border-amber-500/30">D-Shape</span>
               </div>
-              <h4 className="font-semibold text-white pt-2">Chord Melody Application:</h4>
-              <p>
-                When arranging a song, you don&apos;t have to keep jumping back to the open chord at the nut. If your melody note is high up (e.g. fret 5 or fret 7), slide up to the next shape in the CAGFD cycle!
-              </p>
-              <ul className="list-disc pl-5 space-y-1.5 text-slate-400">
-                <li><strong>C-Shape:</strong> Puts the root note on String 1 (e.g., C is fret 3, G is fret 10).</li>
-                <li><strong>A-Shape:</strong> Features root on String 4 and 5th on String 1.</li>
-                <li><strong>G-Shape:</strong> Features 3rd on String 1 and Root on String 2.</li>
-                <li><strong>F-Shape:</strong> Classic movable barre with root on String 4 and String 2.</li>
-                <li><strong>D-Shape:</strong> Features 5th on String 1 and Root on String 2.</li>
+              <ul className="list-disc pl-4 space-y-1 text-slate-400 text-xs">
+                <li><strong>C-Shape:</strong> Root on String 1.</li>
+                <li><strong>A-Shape:</strong> Root on String 4, 5th on String 1.</li>
+                <li><strong>G-Shape:</strong> 3rd on String 1, Root on String 2.</li>
+                <li><strong>F-Shape:</strong> Barre chord, Root on Strings 4 &amp; 2.</li>
+                <li><strong>D-Shape:</strong> 5th on String 1, Root on String 2.</li>
               </ul>
             </div>
-            <div className="pt-3 border-t border-slate-800 flex justify-end">
+            <div className="pt-2 border-t border-slate-800 flex justify-end">
               <button
                 onClick={() => setHelpOpen(false)}
-                className="px-5 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl text-sm transition"
+                className="px-4 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-lg text-xs transition"
               >
-                Got it!
+                Got it
               </button>
             </div>
           </div>
@@ -996,7 +845,6 @@ export default function UkuleleChordMelody() {
   );
 }
 
-// Mini Vertical Chord Diagram Component
 function MiniChordDiagram({
   frets,
   topVoice,
@@ -1014,12 +862,12 @@ function MiniChordDiagram({
   getNoteName: (s: number) => string;
   getIntervalInfo: (i: number, q: ChordDefinition) => { name: string; role: string; colorClass: string; bgHex: string };
 }) {
-  const w = 150;
-  const h = 180;
-  const padX = 28;
-  const padTop = 32;
-  const stringGap = 28;
-  const fretGap = 26;
+  const w = 120;
+  const h = 145;
+  const padX = 22;
+  const padTop = 26;
+  const stringGap = 24;
+  const fretGap = 21;
   const numFretRows = 5;
 
   const nonZero = frets.filter(f => f > 0);
@@ -1028,20 +876,20 @@ function MiniChordDiagram({
   const isNut = baseFret === 1;
 
   return (
-    <svg viewBox={`0 0 ${w} ${h}`} className="w-36 mx-auto select-none">
+    <svg viewBox={`0 0 ${w} ${h}`} className="w-28 mx-auto select-none">
       {!isNut && (
-        <text x="6" y={padTop + 18} fill="#94a3b8" fontSize="11" fontFamily="JetBrains Mono, monospace" fontWeight="bold">
+        <text x="4" y={padTop + 14} fill="#94a3b8" fontSize="9.5" fontFamily="JetBrains Mono, monospace" fontWeight="bold">
           {baseFret}fr
         </text>
       )}
 
-      {/* Nut / Wire */}
-      <line x1={padX} y1={padTop} x2={padX + stringGap * 3} y2={padTop} stroke={isNut ? '#f8fafc' : '#64748b'} strokeWidth={isNut ? '4' : '1.5'} />
+      {/* Nut */}
+      <line x1={padX} y1={padTop} x2={padX + stringGap * 3} y2={padTop} stroke={isNut ? '#f8fafc' : '#64748b'} strokeWidth={isNut ? '3.5' : '1.2'} />
 
       {/* Frets */}
       {Array.from({ length: numFretRows }, (_, i) => {
         const y = padTop + (i + 1) * fretGap;
-        return <line key={`wire-${i}`} x1={padX} y1={y} x2={padX + stringGap * 3} y2={y} stroke="#334155" strokeWidth="1.2" />;
+        return <line key={`wire-${i}`} x1={padX} y1={y} x2={padX + stringGap * 3} y2={y} stroke="#334155" strokeWidth="1" />;
       })}
 
       {/* Strings */}
@@ -1049,8 +897,8 @@ function MiniChordDiagram({
         const x = padX + i * stringGap;
         return (
           <g key={`str-vert-${i}`}>
-            <line x1={x} y1={padTop} x2={x} y2={padTop + numFretRows * fretGap} stroke="#475569" strokeWidth="1.5" />
-            <text x={x} y={padTop + numFretRows * fretGap + 16} fill="#64748b" fontSize="10" fontFamily="JetBrains Mono, monospace" fontWeight="bold" textAnchor="middle">
+            <line x1={x} y1={padTop} x2={x} y2={padTop + numFretRows * fretGap} stroke="#475569" strokeWidth="1.2" />
+            <text x={x} y={padTop + numFretRows * fretGap + 13} fill="#64748b" fontSize="8.5" fontFamily="JetBrains Mono, monospace" fontWeight="bold" textAnchor="middle">
               {['G', 'C', 'E', 'A'][i]}
             </text>
           </g>
@@ -1069,8 +917,8 @@ function MiniChordDiagram({
         if (fret === 0) {
           return (
             <g key={`dot-${strIdx}`}>
-              <circle cx={x} cy={padTop - 12} r="5.5" fill="none" stroke={isMelodyString ? '#fbbf24' : '#cbd5e1'} strokeWidth={isMelodyString ? '2.5' : '1.5'} />
-              {isMelodyString && <circle cx={x} cy={padTop - 12} r="2" fill="#fbbf24" />}
+              <circle cx={x} cy={padTop - 10} r="4.5" fill="none" stroke={isMelodyString ? '#fbbf24' : '#cbd5e1'} strokeWidth={isMelodyString ? '2' : '1.2'} />
+              {isMelodyString && <circle cx={x} cy={padTop - 10} r="1.5" fill="#fbbf24" />}
             </g>
           );
         }
@@ -1081,9 +929,9 @@ function MiniChordDiagram({
           const displayText = labelMode === 'notes' ? getNoteName(semitone) : info.name;
           return (
             <g key={`dot-${strIdx}`}>
-              {isMelodyString && <circle cx={x} cy={y} r="12" fill="none" stroke="#fbbf24" strokeWidth="2" className="animate-pulse" />}
-              <circle cx={x} cy={y} r="8.5" fill={info.bgHex} stroke="#0f172a" strokeWidth="1.5" />
-              <text x={x} y={y + 3.2} fill={info.name === '1' ? '#ffffff' : '#090d16'} fontSize="8.5" fontFamily="JetBrains Mono, monospace" fontWeight="bold" textAnchor="middle">
+              {isMelodyString && <circle cx={x} cy={y} r="9.5" fill="none" stroke="#fbbf24" strokeWidth="1.8" className="animate-pulse" />}
+              <circle cx={x} cy={y} r="7" fill={info.bgHex} stroke="#0f172a" strokeWidth="1.2" />
+              <text x={x} y={y + 2.8} fill={info.name === '1' ? '#ffffff' : '#090d16'} fontSize="7" fontFamily="JetBrains Mono, monospace" fontWeight="bold" textAnchor="middle">
                 {displayText}
               </text>
             </g>
