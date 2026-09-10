@@ -267,28 +267,55 @@ export default function ChordMelodyStudio({ initialInstrument = 'ukulele' }: Pro
   // Ukulele CAGFD shape classifier
   const classifyUkuleleShape = useCallback((frets: number[], root: number, qKey: string) => {
     const archetypes = UKULELE_CAGFD_ARCHETYPES[qKey] || UKULELE_CAGFD_ARCHETYPES['maj'];
+
+    // 1. Exact transposed shape match
     for (const arch of archetypes) {
-      const diffs = frets.map((f, i) => f - arch.frets[i]);
-      if (diffs.every(d => d === diffs[0]) && diffs[0] >= 0) {
-        return `${arch.name}`;
+      const shift = (root - arch.root + 12) % 12;
+      const exactFrets = arch.frets.map(f => f + shift);
+      if (frets.every((f, i) => f === exactFrets[i])) {
+        return arch.name;
       }
     }
+
+    // 2. 3-string match (Melody extension or alternate bass)
+    for (const arch of archetypes) {
+      const shift = (root - arch.root + 12) % 12;
+      const exactFrets = arch.frets.map(f => f + shift);
+
+      // Strings 4, 3, 2 match and string 1 (melody) differs -> Melody extension
+      if (frets[0] === exactFrets[0] && frets[1] === exactFrets[1] && frets[2] === exactFrets[2]) {
+        return `${arch.name} (Ext)`;
+      }
+      // Strings 3, 2, 1 match and string 4 (bass) differs -> Alternate bass
+      if (frets[1] === exactFrets[1] && frets[2] === exactFrets[2] && frets[3] === exactFrets[3]) {
+        return `${arch.name} (Alt Bass)`;
+      }
+    }
+
+    // 3. Structural root position fallback
     const notes = [
       (7 + frets[0]) % 12,
       (0 + frets[1]) % 12,
       (4 + frets[2]) % 12,
       (9 + frets[3]) % 12
     ];
-    if (notes[2] === root && frets[0] >= frets[2]) return 'D-Shape';
-    if (notes[3] === root) return 'C-Shape';
-    if (notes[0] === root && notes[2] === root) return 'F-Shape';
-    if (notes[0] === root) return 'A-Shape';
-    if (notes[1] === root) return 'G-Shape';
+    if (notes[2] === root && frets[0] >= frets[2]) return 'D-Shape (Ext)';
+    if (notes[3] === root) return 'C-Shape (Ext)';
+    if (notes[0] === root && notes[2] === root) return 'F-Shape (Ext)';
+    if (notes[0] === root) return 'A-Shape (Ext)';
+    if (notes[1] === root) return 'G-Shape (Ext)';
 
-    const minF = Math.min(...frets.filter(f => f > 0));
-    const cycle = ['C-Shape', 'A-Shape', 'G-Shape', 'F-Shape', 'D-Shape'];
-    const cycleIdx = Math.floor((minF || 0) / 2.5) % 5;
-    return cycle[cycleIdx];
+    const nonZero = frets.filter(f => f > 0);
+    const avgFret = nonZero.length ? nonZero.reduce((a, b) => a + b, 0) / nonZero.length : 0;
+    const positions = [
+      { name: 'C-Shape', fret: (root - 0 + 12) % 12 },
+      { name: 'A-Shape', fret: (root - 9 + 12) % 12 },
+      { name: 'G-Shape', fret: (root - 7 + 12) % 12 },
+      { name: 'F-Shape', fret: (root - 5 + 12) % 12 },
+      { name: 'D-Shape', fret: (root - 2 + 12) % 12 }
+    ];
+    positions.sort((a, b) => Math.abs(a.fret - avgFret) - Math.abs(b.fret - avgFret));
+    return `${positions[0].name} (Var)`;
   }, []);
 
   // Generate Ukulele Voicings
@@ -907,11 +934,14 @@ export default function ChordMelodyStudio({ initialInstrument = 'ukulele' }: Pro
                 >
                   <div className="space-y-2">
                     {/* Top: Shape name & Fret */}
-                    <div className="flex items-center justify-between text-[11px]">
-                      <span className="px-1.5 py-0.5 rounded font-bold bg-amber-500/15 text-amber-400 border border-amber-500/30 truncate max-w-[95px]">
-                        {voicing.shapeName.split(' ')[0]}
+                    <div className="flex items-center justify-between text-[11px] gap-1">
+                      <span
+                        className="px-1.5 py-0.5 rounded font-bold bg-amber-500/15 text-amber-400 border border-amber-500/30 truncate max-w-[110px]"
+                        title={voicing.shapeName}
+                      >
+                        {voicing.shapeName}
                       </span>
-                      <span className="font-mono text-slate-400 font-bold bg-slate-950 px-1.5 py-0.5 rounded border border-slate-800 text-[10px]">
+                      <span className="font-mono text-slate-400 font-bold bg-slate-950 px-1.5 py-0.5 rounded border border-slate-800 text-[10px] shrink-0">
                         Fret {voicing.minFret}
                       </span>
                     </div>
