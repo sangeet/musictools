@@ -19,13 +19,13 @@ interface ChordDefinition {
 const CHORD_DEFINITIONS: Record<string, ChordDefinition> = {
   maj: { name: 'Major', symbol: '', intervals: [0, 4, 7], intervalNames: ['1', '3', '5'], intervalRoles: ['Root', '3rd', '5th'] },
   min: { name: 'Minor', symbol: 'm', intervals: [0, 3, 7], intervalNames: ['1', 'b3', '5'], intervalRoles: ['Root', 'Min 3rd', '5th'] },
+  maj7: { name: 'Maj 7th', symbol: 'maj7', intervals: [0, 4, 7, 11], intervalNames: ['1', '3', '5', '7'], intervalRoles: ['Root', '3rd', '5th', 'Maj 7th'] },
   '7': { name: 'Dom 7th', symbol: '7', intervals: [0, 4, 7, 10], intervalNames: ['1', '3', '5', 'b7'], intervalRoles: ['Root', '3rd', '5th', 'Dom 7th'] },
   m7: { name: 'Min 7th', symbol: 'm7', intervals: [0, 3, 7, 10], intervalNames: ['1', 'b3', '5', 'b7'], intervalRoles: ['Root', 'Min 3rd', '5th', 'Min 7th'] },
-  maj7: { name: 'Maj 7th', symbol: 'maj7', intervals: [0, 4, 7, 11], intervalNames: ['1', '3', '5', '7'], intervalRoles: ['Root', '3rd', '5th', 'Maj 7th'] },
+  aug: { name: 'Aug', symbol: 'aug', intervals: [0, 4, 8], intervalNames: ['1', '3', '#5'], intervalRoles: ['Root', '3rd', 'Aug 5th'] },
   dim: { name: 'Dim', symbol: 'dim', intervals: [0, 3, 6], intervalNames: ['1', 'b3', 'b5'], intervalRoles: ['Root', 'Min 3rd', 'Dim 5th'] },
   dim7: { name: 'Dim 7th', symbol: 'dim7', intervals: [0, 3, 6, 9], intervalNames: ['1', 'b3', 'b5', 'bb7'], intervalRoles: ['Root', 'Min 3rd', 'Dim 5th', 'Dim 7th'] },
   m7b5: { name: 'm7b5', symbol: 'm7b5', intervals: [0, 3, 6, 10], intervalNames: ['1', 'b3', 'b5', 'b7'], intervalRoles: ['Root', 'Min 3rd', 'Dim 5th', 'Min 7th'] },
-  aug: { name: 'Aug', symbol: 'aug', intervals: [0, 4, 8], intervalNames: ['1', '3', '#5'], intervalRoles: ['Root', '3rd', 'Aug 5th'] },
   sus4: { name: 'Sus4', symbol: 'sus4', intervals: [0, 5, 7], intervalNames: ['1', '4', '5'], intervalRoles: ['Root', '4th', '5th'] },
   sus2: { name: 'Sus2', symbol: 'sus2', intervals: [0, 2, 7], intervalNames: ['1', '2', '5'], intervalRoles: ['Root', '2nd', '5th'] },
   '6': { name: '6th', symbol: '6', intervals: [0, 4, 7, 9], intervalNames: ['1', '3', '5', '6'], intervalRoles: ['Root', '3rd', '5th', '6th'] },
@@ -147,15 +147,93 @@ interface Props {
   initialInstrument?: InstrumentType;
 }
 
+const NOTE_TO_SEMITONE: Record<string, number> = {
+  'c': 0, 'c#': 1, 'db': 1, 'd': 2, 'd#': 3, 'eb': 3, 'e': 4,
+  'f': 5, 'f#': 6, 'gb': 6, 'g': 7, 'g#': 8, 'ab': 8, 'a': 9,
+  'a#': 10, 'bb': 10, 'b': 11
+};
+
 export default function ChordMelodyStudio({ initialInstrument = 'ukulele' }: Props) {
+  // Read initial values from URL query string if present (client-side only)
+  const getInitialParam = (key: string): string | null => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      return params.get(key);
+    }
+    return null;
+  };
+
+  const initialRootParam = getInitialParam('root')?.toLowerCase();
+  const resolvedInitialRoot = initialRootParam !== undefined && initialRootParam !== null && initialRootParam in NOTE_TO_SEMITONE
+    ? NOTE_TO_SEMITONE[initialRootParam]
+    : 0; // Default C
+
+  const initialQualityParam = getInitialParam('quality');
+  const resolvedInitialQuality = initialQualityParam && initialQualityParam in CHORD_DEFINITIONS
+    ? initialQualityParam
+    : 'maj'; // Default Major
+
+  const initialAccParam = getInitialParam('acc');
+  const resolvedInitialAcc = initialAccParam === 'sharp' ? '#' : 'b'; // Default flats
+
+  const initialModeParam = getInitialParam('mode');
+  const resolvedInitialMode = initialModeParam === 'notes' ? 'notes' : 'degrees'; // Default intervals
+
+  const initialTuningParam = getInitialParam('tuning');
+  const resolvedInitialTuning = initialTuningParam === 'low-g' ? 'low-g' : 'high-g';
+
+  const initialMelodyParam = getInitialParam('melody');
+  let resolvedInitialMelody: string | number = 'all';
+  if (initialMelodyParam && initialMelodyParam.toLowerCase() in NOTE_TO_SEMITONE) {
+    resolvedInitialMelody = NOTE_TO_SEMITONE[initialMelodyParam.toLowerCase()];
+  }
+
   const [instrument, setInstrument] = useState<InstrumentType>(initialInstrument);
-  const [rootSemitone, setRootSemitone] = useState<number>(7); // G default
-  const [qualityKey, setQualityKey] = useState<string>('min'); // Minor default
-  const [accidental, setAccidental] = useState<'b' | '#'>('b');
-  const [tuning, setTuning] = useState<'high-g' | 'low-g'>('high-g'); // For Uke
-  const [labelMode, setLabelMode] = useState<'notes' | 'degrees'>('notes');
-  const [melodyFilter, setMelodyFilter] = useState<string | number>('all');
+  const [rootSemitone, setRootSemitone] = useState<number>(resolvedInitialRoot);
+  const [qualityKey, setQualityKey] = useState<string>(resolvedInitialQuality);
+  const [accidental, setAccidental] = useState<'b' | '#'>(resolvedInitialAcc);
+  const [tuning, setTuning] = useState<'high-g' | 'low-g'>(resolvedInitialTuning);
+  const [labelMode, setLabelMode] = useState<'notes' | 'degrees'>(resolvedInitialMode);
+  const [melodyFilter, setMelodyFilter] = useState<string | number>(resolvedInitialMelody);
   const [helpOpen, setHelpOpen] = useState<boolean>(false);
+
+  // Sync state to URL search parameters
+  React.useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams();
+
+    // 1. root (e.g. C, G, Db, F#)
+    const rootName = accidental === 'b' ? CHROMATIC_FLATS[rootSemitone] : CHROMATIC_SHARPS[rootSemitone];
+    params.set('root', rootName);
+
+    // 2. quality (e.g. maj, min, maj7, 7, m7, aug)
+    params.set('quality', qualityKey);
+
+    // 3. mode (only if switched from default 'degrees' to 'notes')
+    if (labelMode === 'notes') {
+      params.set('mode', 'notes');
+    }
+
+    // 4. acc (default is flats 'b'; only parameterize if sharp)
+    if (accidental === '#') {
+      params.set('acc', 'sharp');
+    }
+
+    // 5. melody (only if a specific top note is selected)
+    if (melodyFilter !== 'all' && typeof melodyFilter === 'number') {
+      const melodyName = accidental === 'b' ? CHROMATIC_FLATS[melodyFilter] : CHROMATIC_SHARPS[melodyFilter];
+      params.set('melody', melodyName);
+    }
+
+    // 6. tuning (ukulele only, default is high-g; parameterize if low-g)
+    if (instrument === 'ukulele' && tuning === 'low-g') {
+      params.set('tuning', 'low-g');
+    }
+
+    const newQuery = params.toString();
+    const newRelativePathQuery = window.location.pathname + (newQuery ? `?${newQuery}` : '');
+    window.history.replaceState(null, '', newRelativePathQuery);
+  }, [rootSemitone, qualityKey, labelMode, accidental, melodyFilter, tuning, instrument]);
 
   const audioCtxRef = useRef<AudioContext | null>(null);
 
@@ -1087,11 +1165,11 @@ function MiniChordDiagram({
   const stringNames = isGuitar ? ['E', 'A', 'D', 'G', 'B', 'E'] : ['G', 'C', 'E', 'A'];
   const stringBaseSemitones = isGuitar ? [4, 9, 2, 7, 11, 4] : [7, 0, 4, 9];
 
-  const w = isGuitar ? 135 : 115;
-  const h = 145;
-  const padX = 18;
+  const w = isGuitar ? 140 : 120;
+  const h = 150;
+  const padX = isGuitar ? 17 : 22;
   const padTop = 26;
-  const stringGap = isGuitar ? 20 : 25;
+  const stringGap = isGuitar ? 21 : 25;
   const fretGap = 21;
   const numFretRows = 5;
 
@@ -1101,9 +1179,9 @@ function MiniChordDiagram({
   const isNut = baseFret === 1;
 
   return (
-    <svg viewBox={`0 0 ${w} ${h}`} className="w-28 mx-auto select-none">
+    <svg viewBox={`0 0 ${w} ${h}`} className="w-32 mx-auto select-none">
       {!isNut && (
-        <text x="3" y={padTop + 14} fill="#94a3b8" fontSize="9" fontFamily="JetBrains Mono, monospace" fontWeight="bold">
+        <text x="2" y={padTop + 14} fill="#94a3b8" fontSize="9.5" fontFamily="JetBrains Mono, monospace" fontWeight="bold">
           {baseFret}fr
         </text>
       )}
@@ -1123,7 +1201,7 @@ function MiniChordDiagram({
         return (
           <g key={`str-vert-${i}`}>
             <line x1={x} y1={padTop} x2={x} y2={padTop + numFretRows * fretGap} stroke="#475569" strokeWidth="1.2" />
-            <text x={x} y={padTop + numFretRows * fretGap + 13} fill="#64748b" fontSize="8" fontFamily="JetBrains Mono, monospace" fontWeight="bold" textAnchor="middle">
+            <text x={x} y={padTop + numFretRows * fretGap + 14} fill="#94a3b8" fontSize="8.5" fontFamily="JetBrains Mono, monospace" fontWeight="bold" textAnchor="middle">
               {stringNames[i]}
             </text>
           </g>
@@ -1139,7 +1217,7 @@ function MiniChordDiagram({
         if (fret === -1) {
           // Muted string 'x'
           return (
-            <text key={`mute-${strIdx}`} x={x} y={padTop - 7} fill="#64748b" fontSize="9" fontFamily="JetBrains Mono, monospace" fontWeight="bold" textAnchor="middle">
+            <text key={`mute-${strIdx}`} x={x} y={padTop - 7} fill="#64748b" fontSize="10" fontFamily="JetBrains Mono, monospace" fontWeight="bold" textAnchor="middle">
               &times;
             </text>
           );
@@ -1148,8 +1226,8 @@ function MiniChordDiagram({
         if (fret === 0) {
           return (
             <g key={`dot-${strIdx}`}>
-              <circle cx={x} cy={padTop - 10} r="4" fill="none" stroke={isMelodyString ? '#fbbf24' : '#cbd5e1'} strokeWidth={isMelodyString ? '2' : '1.2'} />
-              {isMelodyString && <circle cx={x} cy={padTop - 10} r="1.5" fill="#fbbf24" />}
+              <circle cx={x} cy={padTop - 10} r="4.5" fill="none" stroke={isMelodyString ? '#fbbf24' : '#cbd5e1'} strokeWidth={isMelodyString ? '2.2' : '1.3'} />
+              {isMelodyString && <circle cx={x} cy={padTop - 10} r="1.8" fill="#fbbf24" />}
             </g>
           );
         }
@@ -1164,9 +1242,9 @@ function MiniChordDiagram({
 
           return (
             <g key={`dot-${strIdx}`}>
-              {isMelodyString && <circle cx={x} cy={y} r="9" fill="none" stroke="#fbbf24" strokeWidth="1.8" className="animate-pulse" />}
-              <circle cx={x} cy={y} r="6.5" fill={info.bgHex} stroke="#0f172a" strokeWidth="1.2" />
-              <text x={x} y={y + 2.5} fill={info.name === '1' ? '#ffffff' : '#090d16'} fontSize="6.5" fontFamily="JetBrains Mono, monospace" fontWeight="bold" textAnchor="middle">
+              {isMelodyString && <circle cx={x} cy={y} r="10.5" fill="none" stroke="#fbbf24" strokeWidth="2" className="animate-pulse" />}
+              <circle cx={x} cy={y} r="7.8" fill={info.bgHex} stroke="#0f172a" strokeWidth="1.2" />
+              <text x={x} y={y + 2.8} fill={info.name === '1' ? '#ffffff' : '#090d16'} fontSize="8" fontFamily="JetBrains Mono, monospace" fontWeight="bold" textAnchor="middle">
                 {displayText}
               </text>
             </g>
