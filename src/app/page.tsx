@@ -27,7 +27,7 @@ export default function Home() {
           <div className="flex items-center justify-between border-b border-slate-800 pb-3">
             <h2 className="text-lg font-bold text-white flex items-center gap-2">
               <span>Featured Tools</span>
-              <span className="text-xs px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 font-mono">1 Tool Live</span>
+              <span className="text-xs px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 font-mono">2 Tools Live</span>
             </h2>
           </div>
 
@@ -65,34 +65,48 @@ export default function Home() {
               </div>
 
               <div className="pt-6 mt-4 border-t border-slate-800/80 flex items-center justify-between text-xs font-bold text-amber-400 group-hover:translate-x-1 transition-transform">
-                <span>Open Studio</span>
+                <span>Open Ukulele Studio</span>
                 <span>&rarr;</span>
               </div>
             </Link>
 
-            {/* Future Tool Placeholder 1 */}
-            <div className="border border-slate-800/60 bg-slate-900/30 rounded-2xl p-6 flex flex-col justify-between opacity-75">
+            {/* Tool #2: Guitar Chord Melody Studio */}
+            <Link
+              href="/tools/guitar-chord-melody"
+              className="group bg-slate-900/80 hover:bg-slate-900 border border-slate-800 hover:border-amber-500/60 rounded-2xl p-6 shadow-xl hover:shadow-amber-500/10 transition-all flex flex-col justify-between"
+            >
               <div className="space-y-4">
                 <div className="flex items-start justify-between">
-                  <div className="w-12 h-12 rounded-xl bg-slate-800 flex items-center justify-center text-2xl">
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-600 to-amber-800 flex items-center justify-center text-2xl shadow-lg shadow-amber-900/30 group-hover:scale-105 transition-transform">
                     🎸
                   </div>
-                  <span className="px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-400 text-xs font-semibold">
-                    In Development
+                  <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/25 text-xs font-semibold">
+                    Live
                   </span>
                 </div>
+
                 <div>
-                  <h3 className="text-xl font-bold text-slate-300">Guitar CAGED Navigator</h3>
-                  <p className="text-slate-500 text-sm mt-2 leading-relaxed">
-                    Master triad inversions, spread voicings, and CAGED box positions across the 6-string fretboard with melody-first harmonization.
+                  <h3 className="text-xl font-bold text-white group-hover:text-amber-400 transition-colors flex items-center gap-2">
+                    Guitar Chord Melody Studio
+                  </h3>
+                  <p className="text-slate-400 text-sm mt-2 leading-relaxed">
+                    Master CAGED system positions, movable chord inversions, and top-melody note targeting across standard 6-string tuning (E-A-D-G-B-E).
                   </p>
                 </div>
+
                 <div className="flex flex-wrap gap-1.5 pt-1">
-                  <span className="px-2 py-0.5 rounded bg-slate-800/50 text-slate-500 text-xs font-mono">CAGED</span>
-                  <span className="px-2 py-0.5 rounded bg-slate-800/50 text-slate-500 text-xs font-mono">Drop-2 &amp; Drop-3</span>
+                  <span className="px-2 py-0.5 rounded bg-slate-800 text-slate-300 text-xs font-mono">CAGED System</span>
+                  <span className="px-2 py-0.5 rounded bg-slate-800 text-slate-300 text-xs font-mono">Top Melody Filter</span>
+                  <span className="px-2 py-0.5 rounded bg-slate-800 text-slate-300 text-xs font-mono">6-String Fretboard</span>
+                  <span className="px-2 py-0.5 rounded bg-slate-800 text-slate-300 text-xs font-mono">Warm Guitar Audio</span>
                 </div>
               </div>
-            </div>
+
+              <div className="pt-6 mt-4 border-t border-slate-800/80 flex items-center justify-between text-xs font-bold text-amber-400 group-hover:translate-x-1 transition-transform">
+                <span>Open Guitar Studio</span>
+                <span>&rarr;</span>
+              </div>
+            </Link>
 
             {/* Future Tool Placeholder 2 */}
             <div className="border border-slate-800/60 bg-slate-900/30 rounded-2xl p-6 flex flex-col justify-between opacity-75">

@@ -25,7 +25,7 @@ const Header = () => {
         </Link>
 
         {/* Desktop Nav */}
-        <nav className="hidden md:flex items-center gap-6 text-sm font-medium">
+        <nav className="hidden md:flex items-center gap-5 text-sm font-medium">
           <Link
             href="/"
             className="text-slate-300 hover:text-white transition-colors"
@@ -36,9 +36,18 @@ const Header = () => {
             href="/tools/ukulele-chord-melody"
             className="text-slate-300 hover:text-amber-400 transition-colors flex items-center gap-1.5"
           >
-            <span>Ukulele Chord Melody</span>
+            <span>Ukulele</span>
             <span className="px-1.5 py-0.5 text-[10px] font-bold rounded bg-amber-500/20 text-amber-400 border border-amber-500/30">
               CAGFD
+            </span>
+          </Link>
+          <Link
+            href="/tools/guitar-chord-melody"
+            className="text-slate-300 hover:text-amber-400 transition-colors flex items-center gap-1.5"
+          >
+            <span>Guitar</span>
+            <span className="px-1.5 py-0.5 text-[10px] font-bold rounded bg-amber-500/20 text-amber-400 border border-amber-500/30">
+              CAGED
             </span>
           </Link>
           <a
@@ -106,7 +115,14 @@ const Header = () => {
             onClick={() => setMobileMenuOpen(false)}
             className="block px-3 py-2 rounded-lg text-amber-400 hover:bg-slate-900 text-sm font-semibold"
           >
-            Ukulele Chord Melody Studio
+            Ukulele Chord Melody (CAGFD)
+          </Link>
+          <Link
+            href="/tools/guitar-chord-melody"
+            onClick={() => setMobileMenuOpen(false)}
+            className="block px-3 py-2 rounded-lg text-amber-400 hover:bg-slate-900 text-sm font-semibold"
+          >
+            Guitar Chord Melody (CAGED)
           </Link>
           <a
             href="https://github.com/sangeet/musictools"
