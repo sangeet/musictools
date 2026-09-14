@@ -59,10 +59,15 @@ export const SCALE_DEFINITIONS: Record<string, ScaleDefinition> = {
     intervals: [0, 3, 5, 7, 10],
     intervalNames: ['1', 'b3', '4', '5', 'b7']
   },
-  blues: {
-    name: 'Blues Scale',
+  minor_blues: {
+    name: 'Minor Blues',
     intervals: [0, 3, 5, 6, 7, 10],
     intervalNames: ['1', 'b3', '4', 'b5', '5', 'b7']
+  },
+  major_blues: {
+    name: 'Major Blues',
+    intervals: [0, 2, 3, 4, 7, 9],
+    intervalNames: ['1', '2', 'b3', '3', '5', '6']
   },
   dorian: {
     name: 'Dorian',
@@ -246,7 +251,12 @@ export default function ChordMelodyStudio({ initialInstrument = 'ukulele' }: Pro
   const resolvedInitialTargetType: 'chord' | 'scale' = initialTargetTypeParam === 'scale' ? 'scale' : 'chord';
 
   const initialScaleParam = getInitialParam('scale');
-  const resolvedInitialScale = initialScaleParam && initialScaleParam in SCALE_DEFINITIONS ? initialScaleParam : 'major';
+  let resolvedInitialScale = 'major';
+  if (initialScaleParam === 'blues') {
+    resolvedInitialScale = 'minor_blues';
+  } else if (initialScaleParam && initialScaleParam in SCALE_DEFINITIONS) {
+    resolvedInitialScale = initialScaleParam;
+  }
 
   const [instrument, setInstrument] = useState<InstrumentType>(initialInstrument);
   const [targetType, setTargetType] = useState<'chord' | 'scale'>(resolvedInitialTargetType);
