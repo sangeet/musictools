@@ -32,6 +32,60 @@ const CHORD_DEFINITIONS: Record<string, ChordDefinition> = {
   m6: { name: 'Min 6th', symbol: 'm6', intervals: [0, 3, 7, 9], intervalNames: ['1', 'b3', '5', '6'], intervalRoles: ['Root', 'Min 3rd', '5th', '6th'] }
 };
 
+export interface ScaleDefinition {
+  name: string;
+  intervals: number[];
+  intervalNames: string[];
+}
+
+export const SCALE_DEFINITIONS: Record<string, ScaleDefinition> = {
+  major: {
+    name: 'Major (Ionian)',
+    intervals: [0, 2, 4, 5, 7, 9, 11],
+    intervalNames: ['1', '2', '3', '4', '5', '6', '7']
+  },
+  natural_minor: {
+    name: 'Natural Minor (Aeolian)',
+    intervals: [0, 2, 3, 5, 7, 8, 10],
+    intervalNames: ['1', '2', 'b3', '4', '5', 'b6', 'b7']
+  },
+  major_pentatonic: {
+    name: 'Major Pentatonic',
+    intervals: [0, 2, 4, 7, 9],
+    intervalNames: ['1', '2', '3', '5', '6']
+  },
+  minor_pentatonic: {
+    name: 'Minor Pentatonic',
+    intervals: [0, 3, 5, 7, 10],
+    intervalNames: ['1', 'b3', '4', '5', 'b7']
+  },
+  blues: {
+    name: 'Blues Scale',
+    intervals: [0, 3, 5, 6, 7, 10],
+    intervalNames: ['1', 'b3', '4', 'b5', '5', 'b7']
+  },
+  dorian: {
+    name: 'Dorian',
+    intervals: [0, 2, 3, 5, 7, 9, 10],
+    intervalNames: ['1', '2', 'b3', '4', '5', '6', 'b7']
+  },
+  mixolydian: {
+    name: 'Mixolydian',
+    intervals: [0, 2, 4, 5, 7, 9, 10],
+    intervalNames: ['1', '2', '3', '4', '5', '6', 'b7']
+  },
+  harmonic_minor: {
+    name: 'Harmonic Minor',
+    intervals: [0, 2, 3, 5, 7, 8, 11],
+    intervalNames: ['1', '2', 'b3', '4', '5', 'b6', '7']
+  },
+  melodic_minor: {
+    name: 'Melodic Minor',
+    intervals: [0, 2, 3, 5, 7, 9, 11],
+    intervalNames: ['1', '2', 'b3', '4', '5', '6', '7']
+  }
+};
+
 // Instrument Configs
 export type InstrumentType = 'ukulele' | 'guitar';
 
@@ -188,9 +242,17 @@ export default function ChordMelodyStudio({ initialInstrument = 'ukulele' }: Pro
     resolvedInitialMelody = NOTE_TO_SEMITONE[initialMelodyParam.toLowerCase()];
   }
 
+  const initialTargetTypeParam = getInitialParam('type');
+  const resolvedInitialTargetType: 'chord' | 'scale' = initialTargetTypeParam === 'scale' ? 'scale' : 'chord';
+
+  const initialScaleParam = getInitialParam('scale');
+  const resolvedInitialScale = initialScaleParam && initialScaleParam in SCALE_DEFINITIONS ? initialScaleParam : 'major';
+
   const [instrument, setInstrument] = useState<InstrumentType>(initialInstrument);
+  const [targetType, setTargetType] = useState<'chord' | 'scale'>(resolvedInitialTargetType);
   const [rootSemitone, setRootSemitone] = useState<number>(resolvedInitialRoot);
   const [qualityKey, setQualityKey] = useState<string>(resolvedInitialQuality);
+  const [scaleKey, setScaleKey] = useState<string>(resolvedInitialScale);
   const [accidental, setAccidental] = useState<'b' | '#'>(resolvedInitialAcc);
   const [tuning, setTuning] = useState<'high-g' | 'low-g'>(resolvedInitialTuning);
   const [labelMode, setLabelMode] = useState<'notes' | 'degrees'>(resolvedInitialMode);
@@ -206,8 +268,14 @@ export default function ChordMelodyStudio({ initialInstrument = 'ukulele' }: Pro
     const rootName = accidental === 'b' ? CHROMATIC_FLATS[rootSemitone] : CHROMATIC_SHARPS[rootSemitone];
     params.set('root', rootName);
 
-    // 2. quality (e.g. maj, min, maj7, 7, m7, aug)
-    params.set('quality', qualityKey);
+    // 2. target type (chord or scale)
+    if (targetType === 'scale') {
+      params.set('type', 'scale');
+      params.set('scale', scaleKey);
+    } else {
+      // quality (e.g. maj, min, maj7, 7, m7, aug)
+      params.set('quality', qualityKey);
+    }
 
     // 3. mode (only if switched from default 'degrees' to 'notes')
     if (labelMode === 'notes') {
@@ -219,8 +287,8 @@ export default function ChordMelodyStudio({ initialInstrument = 'ukulele' }: Pro
       params.set('acc', 'sharp');
     }
 
-    // 5. melody (only if a specific top note is selected)
-    if (melodyFilter !== 'all' && typeof melodyFilter === 'number') {
+    // 5. melody (only if a specific top note is selected and in chord mode)
+    if (targetType === 'chord' && melodyFilter !== 'all' && typeof melodyFilter === 'number') {
       const melodyName = accidental === 'b' ? CHROMATIC_FLATS[melodyFilter] : CHROMATIC_SHARPS[melodyFilter];
       params.set('melody', melodyName);
     }
@@ -233,7 +301,7 @@ export default function ChordMelodyStudio({ initialInstrument = 'ukulele' }: Pro
     const newQuery = params.toString();
     const newRelativePathQuery = window.location.pathname + (newQuery ? `?${newQuery}` : '');
     window.history.replaceState(null, '', newRelativePathQuery);
-  }, [rootSemitone, qualityKey, labelMode, accidental, melodyFilter, tuning, instrument]);
+  }, [rootSemitone, targetType, qualityKey, scaleKey, labelMode, accidental, melodyFilter, tuning, instrument]);
 
   const audioCtxRef = useRef<AudioContext | null>(null);
 
@@ -340,6 +408,33 @@ export default function ChordMelodyStudio({ initialInstrument = 'ukulele' }: Pro
       return { name, role, colorClass, bgHex };
     }
     return { name: 'Ext', role: 'Color Note', colorClass: 'bg-teal-500 text-white', bgHex: '#14b8a6' };
+  }, []);
+
+  const getScaleIntervalInfo = useCallback((intervalSemitone: number, scaleDef: ScaleDefinition) => {
+    const idx = scaleDef.intervals.indexOf(intervalSemitone);
+    if (idx !== -1) {
+      const name = scaleDef.intervalNames[idx];
+      let colorClass = 'bg-slate-700 text-slate-200';
+      let bgHex = '#475569';
+      if (name === '1') {
+        colorClass = 'bg-rose-500 text-white font-bold shadow-rose-500/50';
+        bgHex = '#f43f5e';
+      } else if (name.includes('3')) {
+        colorClass = 'bg-amber-400 text-slate-950 font-bold shadow-amber-400/50';
+        bgHex = '#fbbf24';
+      } else if (name.includes('5')) {
+        colorClass = 'bg-sky-400 text-slate-950 font-bold shadow-sky-400/50';
+        bgHex = '#38bdf8';
+      } else if (name.includes('7')) {
+        colorClass = 'bg-purple-400 text-slate-950 font-bold shadow-purple-400/50';
+        bgHex = '#c084fc';
+      } else if (name.includes('2') || name.includes('4') || name.includes('6')) {
+        colorClass = 'bg-emerald-400 text-slate-950 font-bold shadow-emerald-400/50';
+        bgHex = '#34d399';
+      }
+      return { name, scaleDegree: idx + 1, colorClass, bgHex };
+    }
+    return { name: 'Ext', scaleDegree: 0, colorClass: 'bg-teal-500 text-white', bgHex: '#14b8a6' };
   }, []);
 
   // Ukulele CAGFD shape classifier
@@ -593,7 +688,10 @@ export default function ChordMelodyStudio({ initialInstrument = 'ukulele' }: Pro
   }, [voicings, melodyFilter]);
 
   const activeQuality = CHORD_DEFINITIONS[qualityKey] || CHORD_DEFINITIONS['maj'];
+  const activeScale = SCALE_DEFINITIONS[scaleKey] || SCALE_DEFINITIONS['major'];
   const chordName = `${getNoteName(rootSemitone)}${activeQuality.symbol}`;
+  const scaleName = `${getNoteName(rootSemitone)} ${activeScale.name}`;
+  const displayName = targetType === 'chord' ? chordName : scaleName;
   const currentStrings = instrument === 'ukulele' ? UKULELE_STRINGS : GUITAR_STRINGS;
 
   // Logarithmic fret positions
@@ -652,6 +750,32 @@ export default function ChordMelodyStudio({ initialInstrument = 'ukulele' }: Pro
               <span className="text-[9px] opacity-75 font-mono">CAGED</span>
             </button>
           </div>
+        </div>
+
+        {/* Mode Switcher: Chords vs Scales */}
+        <div className="flex items-center gap-1 bg-slate-950 border border-slate-800 rounded-lg p-0.5 font-medium">
+          <button
+            onClick={() => setTargetType('chord')}
+            className={`px-3 py-1 rounded-md text-xs font-bold transition flex items-center gap-1 ${
+              targetType === 'chord'
+                ? 'bg-emerald-500 text-slate-950 shadow-sm'
+                : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            <span>🎸</span>
+            <span>Chords</span>
+          </button>
+          <button
+            onClick={() => setTargetType('scale')}
+            className={`px-3 py-1 rounded-md text-xs font-bold transition flex items-center gap-1 ${
+              targetType === 'scale'
+                ? 'bg-emerald-500 text-slate-950 shadow-sm'
+                : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            <span>🎼</span>
+            <span>Scales</span>
+          </button>
         </div>
 
         {/* Quick Toggles */}
@@ -742,92 +866,132 @@ export default function ChordMelodyStudio({ initialInstrument = 'ukulele' }: Pro
           </div>
         </div>
 
-        {/* Row 2: Shrunk Qualities */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs">
-          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 shrink-0 mr-1">Type:</span>
-          {Object.entries(CHORD_DEFINITIONS).map(([key, chord]) => {
-            const isSelected = key === qualityKey;
-            return (
-              <button
-                key={key}
-                onClick={() => {
-                  setQualityKey(key);
-                  setMelodyFilter('all');
-                }}
-                className={`px-2.5 py-1 rounded-md text-xs font-semibold whitespace-nowrap transition border ${
-                  isSelected
-                    ? 'bg-emerald-500 text-slate-950 border-emerald-400 shadow-sm font-bold scale-105'
-                    : 'bg-slate-800/70 text-slate-300 border-slate-700/50 hover:bg-slate-700 hover:text-white'
-                }`}
-              >
-                {chord.name}
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Row 3: Active Chord + Melody Filter Pills */}
-        <div className="pt-2 border-t border-slate-800 flex flex-wrap items-center justify-between gap-2.5">
-          <div className="flex items-center gap-2.5">
-            <span className="px-2.5 py-0.5 rounded-lg bg-amber-500/15 border border-amber-500/30 text-amber-300 font-extrabold text-base font-mono">
-              {chordName}
-            </span>
-            <div className="flex items-center gap-1">
-              {activeQuality.intervals.map((interval) => {
-                const semitone = (rootSemitone + interval) % 12;
-                const noteName = getNoteName(semitone);
-                const info = getIntervalInfo(interval, activeQuality);
-                return (
-                  <span
-                    key={interval}
-                    className={`px-1.5 py-0.5 rounded text-[11px] font-mono font-semibold ${info.colorClass}`}
-                  >
-                    {noteName} <span className="opacity-75 text-[9px]">({info.name})</span>
-                  </span>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Melody Filter Inline */}
-          <div className="flex items-center gap-1.5 overflow-x-auto">
-            <span className="text-[10px] uppercase font-bold text-amber-400 whitespace-nowrap flex items-center gap-1">
-              <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
-                <path d="M18 3a1 1 0 00-1.196-.98l-10 2A1 1 0 006 5v9.114A4.369 4.369 0 005 14c-1.657 0-3 .895-3 2s1.343 2 3 2 3-.895 3-2V7.82l8-1.6v5.894A4.37 4.37 0 0015 12c-1.657 0-3 .895-3 2s1.343 2 3 2 3-.895 3-2V3z" />
-              </svg>
-              Top Melody:
-            </span>
-            <button
-              onClick={() => setMelodyFilter('all')}
-              className={`px-2 py-0.5 rounded text-[11px] font-semibold transition ${
-                melodyFilter === 'all'
-                  ? 'bg-amber-500 text-slate-950 font-bold'
-                  : 'bg-slate-800 text-slate-400 hover:text-white'
-              }`}
-            >
-              All
-            </button>
-            {activeQuality.intervals.map((interval) => {
-              const semitone = (rootSemitone + interval) % 12;
-              const noteName = getNoteName(semitone);
-              const info = getIntervalInfo(interval, activeQuality);
-              const isSelected = melodyFilter === semitone;
+        {/* Row 2: Qualities (if chord mode) OR Scales (if scale mode) */}
+        {targetType === 'chord' ? (
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 shrink-0 mr-1">Chord:</span>
+            {Object.entries(CHORD_DEFINITIONS).map(([key, chord]) => {
+              const isSelected = key === qualityKey;
               return (
                 <button
-                  key={interval}
-                  onClick={() => setMelodyFilter(semitone)}
-                  className={`px-2 py-0.5 rounded text-[11px] font-semibold flex items-center gap-1 transition border ${
+                  key={key}
+                  onClick={() => {
+                    setQualityKey(key);
+                    setMelodyFilter('all');
+                  }}
+                  className={`px-2.5 py-1 rounded-md text-xs font-semibold whitespace-nowrap transition border ${
                     isSelected
-                      ? 'bg-amber-400 text-slate-950 border-amber-300 font-bold'
-                      : 'bg-slate-800 text-slate-300 border-slate-700 hover:text-white'
+                      ? 'bg-emerald-500 text-slate-950 border-emerald-400 shadow-sm font-bold scale-105'
+                      : 'bg-slate-800/70 text-slate-300 border-slate-700/50 hover:bg-slate-700 hover:text-white'
                   }`}
                 >
-                  <span className="w-1.5 h-1.5 rounded-full inline-block" style={{ backgroundColor: info.bgHex }}></span>
-                  <span>{noteName}</span>
+                  {chord.name}
                 </button>
               );
             })}
           </div>
+        ) : (
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-400 shrink-0 mr-1">Scale:</span>
+            {Object.entries(SCALE_DEFINITIONS).map(([key, scale]) => {
+              const isSelected = key === scaleKey;
+              return (
+                <button
+                  key={key}
+                  onClick={() => setScaleKey(key)}
+                  className={`px-2.5 py-1 rounded-md text-xs font-semibold whitespace-nowrap transition border ${
+                    isSelected
+                      ? 'bg-emerald-500 text-slate-950 border-emerald-400 shadow-sm font-bold scale-105'
+                      : 'bg-slate-800/70 text-slate-300 border-slate-700/50 hover:bg-slate-700 hover:text-white'
+                  }`}
+                >
+                  {scale.name}
+                </button>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Row 3: Active Chord/Scale Badge + Interval/Degrees Pills */}
+        <div className="pt-2 border-t border-slate-800 flex flex-wrap items-center justify-between gap-2.5">
+          <div className="flex items-center gap-2.5">
+            <span className="px-2.5 py-0.5 rounded-lg bg-amber-500/15 border border-amber-500/30 text-amber-300 font-extrabold text-base font-mono">
+              {displayName}
+            </span>
+            <div className="flex items-center gap-1 flex-wrap">
+              {targetType === 'chord' ? (
+                activeQuality.intervals.map((interval) => {
+                  const semitone = (rootSemitone + interval) % 12;
+                  const noteName = getNoteName(semitone);
+                  const info = getIntervalInfo(interval, activeQuality);
+                  return (
+                    <span
+                      key={interval}
+                      className={`px-1.5 py-0.5 rounded text-[11px] font-mono font-semibold ${info.colorClass}`}
+                    >
+                      {noteName} <span className="opacity-75 text-[9px]">({info.name})</span>
+                    </span>
+                  );
+                })
+              ) : (
+                activeScale.intervals.map((interval, sIdx) => {
+                  const semitone = (rootSemitone + interval) % 12;
+                  const noteName = getNoteName(semitone);
+                  const info = getScaleIntervalInfo(interval, activeScale);
+                  return (
+                    <span
+                      key={interval}
+                      className={`px-1.5 py-0.5 rounded text-[11px] font-mono font-semibold ${info.colorClass}`}
+                    >
+                      {noteName} <span className="opacity-75 text-[9px]">({info.name})</span>
+                    </span>
+                  );
+                })
+              )}
+            </div>
+          </div>
+
+          {/* Melody Filter Inline (Chord Mode only) */}
+          {targetType === 'chord' && (
+            <div className="flex items-center gap-1.5 overflow-x-auto">
+              <span className="text-[10px] uppercase font-bold text-amber-400 whitespace-nowrap flex items-center gap-1">
+                <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M18 3a1 1 0 00-1.196-.98l-10 2A1 1 0 006 5v9.114A4.369 4.369 0 005 14c-1.657 0-3 .895-3 2s1.343 2 3 2 3-.895 3-2V7.82l8-1.6v5.894A4.37 4.37 0 0015 12c-1.657 0-3 .895-3 2s1.343 2 3 2 3-.895 3-2V3z" />
+                </svg>
+                Top Melody:
+              </span>
+              <button
+                onClick={() => setMelodyFilter('all')}
+                className={`px-2 py-0.5 rounded text-[11px] font-semibold transition ${
+                  melodyFilter === 'all'
+                    ? 'bg-amber-500 text-slate-950 font-bold'
+                    : 'bg-slate-800 text-slate-400 hover:text-white'
+                }`}
+              >
+                All
+              </button>
+              {activeQuality.intervals.map((interval) => {
+                const semitone = (rootSemitone + interval) % 12;
+                const noteName = getNoteName(semitone);
+                const info = getIntervalInfo(interval, activeQuality);
+                const isSelected = melodyFilter === semitone;
+                return (
+                  <button
+                    key={interval}
+                    onClick={() => setMelodyFilter(semitone)}
+                    className={`px-2 py-0.5 rounded text-[11px] font-semibold flex items-center gap-1 transition border ${
+                      isSelected
+                        ? 'bg-amber-400 text-slate-950 border-amber-300 font-bold'
+                        : 'bg-slate-800 text-slate-300 border-slate-700 hover:text-white'
+                    }`}
+                  >
+                    <span className="w-1.5 h-1.5 rounded-full inline-block" style={{ backgroundColor: info.bgHex }}></span>
+                    <span>{noteName}</span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
       </div>
 
@@ -913,18 +1077,28 @@ export default function ChordMelodyStudio({ initialInstrument = 'ukulele' }: Pro
                   const baseMidi = (instrument === 'ukulele' && str.stringNum === 4 && tuning === 'low-g')
                     ? str.midiLow!
                     : str.midi;
-                  const targetSemitones = new Set(activeQuality.intervals.map(i => (rootSemitone + i) % 12));
+                  const targetSemitones = targetType === 'chord'
+                    ? new Set(activeQuality.intervals.map(i => (rootSemitone + i) % 12))
+                    : new Set(activeScale.intervals.map(i => (rootSemitone + i) % 12));
 
                   return Array.from({ length: numFrets + 1 }, (_, f) => {
                     const semitone = (str.semitone + f) % 12;
                     const midiPitch = baseMidi + f;
-                    const isChordTone = targetSemitones.has(semitone);
-                    if (!isChordTone) return null;
+                    const isTone = targetSemitones.has(semitone);
+                    if (!isTone) return null;
 
                     const cx = f === 0 ? nutWidth + 4 : (fretX[f - 1] + fretX[f]) / 2;
                     const intervalFromRoot = (semitone - rootSemitone + 12) % 12;
-                    const info = getIntervalInfo(intervalFromRoot, activeQuality);
-                    const isMelodyHighlighted = melodyFilter !== 'all' && melodyFilter === semitone;
+                    
+                    let info: { name: string; bgHex: string; colorClass: string };
+                    if (targetType === 'chord') {
+                      info = getIntervalInfo(intervalFromRoot, activeQuality);
+                    } else {
+                      info = getScaleIntervalInfo(intervalFromRoot, activeScale);
+                    }
+
+                    const isMelodyHighlighted = targetType === 'chord' && melodyFilter !== 'all' && melodyFilter === semitone;
+                    const isScaleRoot = targetType === 'scale' && intervalFromRoot === 0;
                     const displayText = labelMode === 'notes' ? getNoteName(semitone) : info.name;
 
                     return (
@@ -935,6 +1109,9 @@ export default function ChordMelodyStudio({ initialInstrument = 'ukulele' }: Pro
                       >
                         {isMelodyHighlighted && (
                           <circle cx={cx} cy={y} r={instrument === 'guitar' ? 10.5 : 12.5} fill="none" stroke="#fbbf24" strokeWidth="2" className="animate-pulse" />
+                        )}
+                        {isScaleRoot && (
+                          <circle cx={cx} cy={y} r={instrument === 'guitar' ? 10.5 : 12.5} fill="none" stroke="#f43f5e" strokeWidth="2" />
                         )}
                         <circle
                           cx={cx}
@@ -967,113 +1144,163 @@ export default function ChordMelodyStudio({ initialInstrument = 'ukulele' }: Pro
         </div>
       </div>
 
-      {/* 4. VOICINGS IMMEDIATELY ACCESSIBLE */}
-      <div className="space-y-2.5">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <h2 className="text-sm font-bold text-white uppercase tracking-wider">
-              {instrument === 'ukulele' ? 'CAGFD Voicings' : 'CAGED Voicings'}
-            </h2>
-            <span className="px-2 py-0.5 rounded-full bg-slate-800 text-amber-400 text-xs font-mono font-bold border border-slate-700">
-              {displayedVoicings.length} {displayedVoicings.length === 1 ? 'Shape' : 'Shapes'}
+      {/* 4. CHORD VOICINGS OR SCALE OVERVIEW */}
+      {targetType === 'chord' ? (
+        <div className="space-y-2.5">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <h2 className="text-sm font-bold text-white uppercase tracking-wider">
+                {instrument === 'ukulele' ? 'CAGFD Voicings' : 'CAGED Voicings'}
+              </h2>
+              <span className="px-2 py-0.5 rounded-full bg-slate-800 text-amber-400 text-xs font-mono font-bold border border-slate-700">
+                {displayedVoicings.length} {displayedVoicings.length === 1 ? 'Shape' : 'Shapes'}
+              </span>
+            </div>
+
+            <span className="text-xs text-slate-400">
+              Click <strong className="text-amber-400">Strum</strong> or chord box to preview
             </span>
           </div>
 
-          <span className="text-xs text-slate-400">
-            Click <strong className="text-amber-400">Strum</strong> or chord box to preview
-          </span>
-        </div>
+          {displayedVoicings.length === 0 ? (
+            <div className="py-8 text-center text-slate-400 bg-slate-900/50 rounded-xl border border-slate-800 space-y-2">
+              <p className="font-medium text-white text-sm">No voicings with {getNoteName(Number(melodyFilter))} on top.</p>
+              <button
+                onClick={() => setMelodyFilter('all')}
+                className="px-3 py-1 bg-amber-500 text-slate-950 font-bold text-xs rounded-lg hover:bg-amber-400 transition"
+              >
+                Reset Filter
+              </button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2.5">
+              {displayedVoicings.map((voicing, vIdx) => {
+                const topSemi = voicing.topVoice.semitone;
+                const topName = getNoteName(topSemi);
+                const topInterval = (topSemi - rootSemitone + 12) % 12;
+                const topInfo = getIntervalInfo(topInterval, activeQuality);
+                const isFiltered = melodyFilter === topSemi;
 
-        {displayedVoicings.length === 0 ? (
-          <div className="py-8 text-center text-slate-400 bg-slate-900/50 rounded-xl border border-slate-800 space-y-2">
-            <p className="font-medium text-white text-sm">No voicings with {getNoteName(Number(melodyFilter))} on top.</p>
-            <button
-              onClick={() => setMelodyFilter('all')}
-              className="px-3 py-1 bg-amber-500 text-slate-950 font-bold text-xs rounded-lg hover:bg-amber-400 transition"
-            >
-              Reset Filter
-            </button>
+                return (
+                  <div
+                    key={`voicing-${vIdx}`}
+                    className={`bg-slate-900/90 border rounded-xl p-3 flex flex-col justify-between hover:border-amber-500/50 hover:shadow-lg hover:shadow-amber-500/5 transition-all group ${
+                      isFiltered ? 'border-amber-500/80 bg-amber-950/15' : 'border-slate-800'
+                    }`}
+                  >
+                    <div className="space-y-2">
+                      {/* Top: Shape name & Fret */}
+                      <div className="flex items-center justify-between text-[11px] gap-1">
+                        <span
+                          className="px-1.5 py-0.5 rounded font-bold bg-amber-500/15 text-amber-400 border border-amber-500/30 truncate max-w-[110px]"
+                          title={voicing.shapeName}
+                        >
+                          {voicing.shapeName}
+                        </span>
+                        <span className="font-mono text-slate-400 font-bold bg-slate-950 px-1.5 py-0.5 rounded border border-slate-800 text-[10px] shrink-0">
+                          Fret {voicing.minFret}
+                        </span>
+                      </div>
+
+                      {/* Melody Badge */}
+                      <div className="px-1.5 py-1 rounded-lg bg-slate-950 border border-slate-800 flex items-center justify-between text-[11px]">
+                        <span className="text-[9px] uppercase font-bold text-slate-400">Melody:</span>
+                        <span className={`px-1.5 py-0.2 rounded font-mono font-bold text-[10px] ${topInfo.colorClass}`}>
+                          {topName} ({topInfo.name})
+                        </span>
+                      </div>
+
+                      {/* Mini Chord Box */}
+                      <div
+                        className="flex justify-center cursor-pointer py-0.5"
+                        onClick={() => strumChord(voicing.frets)}
+                        title="Click to Strum"
+                      >
+                        <MiniChordDiagram
+                          frets={voicing.frets}
+                          topVoice={voicing.topVoice}
+                          rootSemitone={rootSemitone}
+                          quality={activeQuality}
+                          labelMode={labelMode}
+                          instrument={instrument}
+                          getNoteName={getNoteName}
+                          getIntervalInfo={getIntervalInfo}
+                        />
+                      </div>
+
+                      {/* Tab Notation */}
+                      <div className="text-center font-mono text-[10.5px] font-bold text-slate-300 bg-slate-950/60 py-1 rounded border border-slate-800/60">
+                        [ {voicing.frets.map(f => (f === -1 ? 'x' : f)).join(' ')} ]
+                      </div>
+                    </div>
+
+                    {/* Strum button */}
+                    <div className="pt-2 mt-2 border-t border-slate-800/80">
+                      <button
+                        onClick={() => strumChord(voicing.frets)}
+                        className="w-full py-1.5 rounded-lg bg-slate-800 hover:bg-amber-500 hover:text-slate-950 text-slate-200 text-xs font-bold transition flex items-center justify-center gap-1 shadow-sm"
+                      >
+                        <svg className="w-3.5 h-3.5 text-amber-400 group-hover:text-slate-950" fill="currentColor" viewBox="0 0 20 20">
+                          <path d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" />
+                        </svg>
+                        <span>Strum</span>
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-4 shadow-sm space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800/80 pb-2.5">
+            <div className="flex items-center gap-2">
+              <h2 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
+                <span>🎼</span>
+                <span>{scaleName} Scale Formula & Reference</span>
+              </h2>
+              <span className="px-2 py-0.5 rounded-full bg-slate-800 text-emerald-400 text-xs font-mono font-bold border border-slate-700">
+                {activeScale.intervals.length} Notes
+              </span>
+            </div>
+            <span className="text-xs text-slate-400">
+              Click any note on the fretboard to hear its pitch
+            </span>
           </div>
-        ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2.5">
-            {displayedVoicings.map((voicing, vIdx) => {
-              const topSemi = voicing.topVoice.semitone;
-              const topName = getNoteName(topSemi);
-              const topInterval = (topSemi - rootSemitone + 12) % 12;
-              const topInfo = getIntervalInfo(topInterval, activeQuality);
-              const isFiltered = melodyFilter === topSemi;
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-2">
+            {activeScale.intervals.map((interval, idx) => {
+              const semitone = (rootSemitone + interval) % 12;
+              const noteName = getNoteName(semitone);
+              const info = getScaleIntervalInfo(interval, activeScale);
+              const isRoot = interval === 0;
 
               return (
                 <div
-                  key={`voicing-${vIdx}`}
-                  className={`bg-slate-900/90 border rounded-xl p-3 flex flex-col justify-between hover:border-amber-500/50 hover:shadow-lg hover:shadow-amber-500/5 transition-all group ${
-                    isFiltered ? 'border-amber-500/80 bg-amber-950/15' : 'border-slate-800'
+                  key={idx}
+                  className={`bg-slate-950/80 border rounded-lg p-2.5 text-center flex flex-col items-center justify-center gap-1 ${
+                    isRoot ? 'border-rose-500/60 bg-rose-950/10' : 'border-slate-800'
                   }`}
                 >
-                  <div className="space-y-2">
-                    {/* Top: Shape name & Fret */}
-                    <div className="flex items-center justify-between text-[11px] gap-1">
-                      <span
-                        className="px-1.5 py-0.5 rounded font-bold bg-amber-500/15 text-amber-400 border border-amber-500/30 truncate max-w-[110px]"
-                        title={voicing.shapeName}
-                      >
-                        {voicing.shapeName}
-                      </span>
-                      <span className="font-mono text-slate-400 font-bold bg-slate-950 px-1.5 py-0.5 rounded border border-slate-800 text-[10px] shrink-0">
-                        Fret {voicing.minFret}
-                      </span>
-                    </div>
-
-                    {/* Melody Badge */}
-                    <div className="px-1.5 py-1 rounded-lg bg-slate-950 border border-slate-800 flex items-center justify-between text-[11px]">
-                      <span className="text-[9px] uppercase font-bold text-slate-400">Melody:</span>
-                      <span className={`px-1.5 py-0.2 rounded font-mono font-bold text-[10px] ${topInfo.colorClass}`}>
-                        {topName} ({topInfo.name})
-                      </span>
-                    </div>
-
-                    {/* Mini Chord Box */}
-                    <div
-                      className="flex justify-center cursor-pointer py-0.5"
-                      onClick={() => strumChord(voicing.frets)}
-                      title="Click to Strum"
-                    >
-                      <MiniChordDiagram
-                        frets={voicing.frets}
-                        topVoice={voicing.topVoice}
-                        rootSemitone={rootSemitone}
-                        quality={activeQuality}
-                        labelMode={labelMode}
-                        instrument={instrument}
-                        getNoteName={getNoteName}
-                        getIntervalInfo={getIntervalInfo}
-                      />
-                    </div>
-
-                    {/* Tab Notation */}
-                    <div className="text-center font-mono text-[10.5px] font-bold text-slate-300 bg-slate-950/60 py-1 rounded border border-slate-800/60">
-                      [ {voicing.frets.map(f => (f === -1 ? 'x' : f)).join(' ')} ]
-                    </div>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 font-mono">
+                    Degree {idx + 1}
+                  </span>
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center font-mono font-bold text-xs my-0.5 ${info.colorClass}`}>
+                    {labelMode === 'notes' ? noteName : info.name}
                   </div>
-
-                  {/* Strum button */}
-                  <div className="pt-2 mt-2 border-t border-slate-800/80">
-                    <button
-                      onClick={() => strumChord(voicing.frets)}
-                      className="w-full py-1.5 rounded-lg bg-slate-800 hover:bg-amber-500 hover:text-slate-950 text-slate-200 text-xs font-bold transition flex items-center justify-center gap-1 shadow-sm"
-                    >
-                      <svg className="w-3.5 h-3.5 text-amber-400 group-hover:text-slate-950" fill="currentColor" viewBox="0 0 20 20">
-                        <path d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" />
-                      </svg>
-                      <span>Strum</span>
-                    </button>
+                  <div className="text-xs font-bold text-white font-mono">
+                    {noteName} <span className="text-slate-400 text-[10px]">({info.name})</span>
                   </div>
+                  <span className="text-[9px] text-slate-500 font-mono">
+                    {interval} semitones
+                  </span>
                 </div>
               );
             })}
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Guide Modal */}
       {helpOpen && (
