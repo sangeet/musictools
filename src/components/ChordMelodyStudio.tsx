@@ -241,25 +241,25 @@ const PRESETS: PresetOption[] = [
     name: '12-Bar Blues in A (A7 · D7 · E7)',
     description: 'I - IV - V dominant 7th chords for blues progression',
     boards: [
-      { title: 'I Chord (A7)', targetType: 'chord', rootSemitone: 9, qualityKey: '7', scaleKey: 'minor_blues', accidental: '#' },
-      { title: 'IV Chord (D7)', targetType: 'chord', rootSemitone: 2, qualityKey: '7', scaleKey: 'minor_blues', accidental: '#' },
-      { title: 'V Chord (E7)', targetType: 'chord', rootSemitone: 4, qualityKey: '7', scaleKey: 'minor_blues', accidental: '#' }
+      { title: 'I Chord (A7)', targetType: 'chord', rootSemitone: 9, qualityKey: '7', scaleKey: 'minor_blues', accidental: 'b' },
+      { title: 'IV Chord (D7)', targetType: 'chord', rootSemitone: 2, qualityKey: '7', scaleKey: 'minor_blues', accidental: 'b' },
+      { title: 'V Chord (E7)', targetType: 'chord', rootSemitone: 4, qualityKey: '7', scaleKey: 'minor_blues', accidental: 'b' }
     ]
   },
   {
     name: 'Blues Soloing: A Minor Blues + A7',
     description: 'Stacking the hexatonic blue notes over the I7 dominant chord',
     boards: [
-      { title: 'Lead Scale (A Minor Blues)', targetType: 'scale', rootSemitone: 9, qualityKey: '7', scaleKey: 'minor_blues', accidental: '#' },
-      { title: 'Underlying Chord (A7)', targetType: 'chord', rootSemitone: 9, qualityKey: '7', scaleKey: 'minor_blues', accidental: '#' }
+      { title: 'Lead Scale (A Minor Blues)', targetType: 'scale', rootSemitone: 9, qualityKey: '7', scaleKey: 'minor_blues', accidental: 'b' },
+      { title: 'Underlying Chord (A7)', targetType: 'chord', rootSemitone: 9, qualityKey: '7', scaleKey: 'minor_blues', accidental: 'b' }
     ]
   },
   {
     name: 'Major vs Minor Blues in A',
     description: 'Compare sweet major blues vs gritty minor blues',
     boards: [
-      { title: 'A Major Blues (Sweet / Country)', targetType: 'scale', rootSemitone: 9, qualityKey: '7', scaleKey: 'major_blues', accidental: '#' },
-      { title: 'A Minor Blues (Gritty / Chicago)', targetType: 'scale', rootSemitone: 9, qualityKey: '7', scaleKey: 'minor_blues', accidental: '#' }
+      { title: 'A Major Blues (Sweet / Country)', targetType: 'scale', rootSemitone: 9, qualityKey: '7', scaleKey: 'major_blues', accidental: 'b' },
+      { title: 'A Minor Blues (Gritty / Chicago)', targetType: 'scale', rootSemitone: 9, qualityKey: '7', scaleKey: 'minor_blues', accidental: 'b' }
     ]
   },
   {
@@ -293,7 +293,7 @@ export default function ChordMelodyStudio({ initialInstrument = 'ukulele' }: Pro
     : '7';
 
   const initialAccParam = getInitialParam('acc');
-  const resolvedInitialAcc = initialAccParam === 'sharp' ? '#' : '#';
+  const resolvedInitialAcc = initialAccParam === 'sharp' ? '#' : 'b';
 
   const initialModeParam = getInitialParam('mode');
   const resolvedInitialMode = initialModeParam === 'notes' ? 'notes' : 'degrees';
@@ -446,7 +446,7 @@ export default function ChordMelodyStudio({ initialInstrument = 'ukulele' }: Pro
     });
   }, [getAudioContext, playNote, instrument, tuning]);
 
-  const getNoteName = useCallback((semitone: number, acc: 'b' | '#' = '#') => {
+  const getNoteName = useCallback((semitone: number, acc: 'b' | '#' = 'b') => {
     const normalized = ((semitone % 12) + 12) % 12;
     return acc === 'b' ? CHROMATIC_FLATS[normalized] : CHROMATIC_SHARPS[normalized];
   }, []);
@@ -744,7 +744,7 @@ export default function ChordMelodyStudio({ initialInstrument = 'ukulele' }: Pro
       rootSemitone: last ? (last.rootSemitone + 5) % 12 : 2, // cycle fourth by default
       qualityKey: last ? last.qualityKey : '7',
       scaleKey: last ? last.scaleKey : 'minor_blues',
-      accidental: last ? last.accidental : '#'
+      accidental: last ? last.accidental : 'b'
     };
     setFretboards(prev => [...prev, newBoard]);
     setActiveBoardIndex(fretboards.length);
@@ -918,182 +918,144 @@ export default function ChordMelodyStudio({ initialInstrument = 'ukulele' }: Pro
             <div
               key={board.id}
               onClick={() => setActiveBoardIndex(bIdx)}
-              className={`bg-slate-900/95 rounded-xl border transition-all p-3 shadow-md space-y-2.5 ${
+              className={`relative bg-slate-900/95 rounded-xl border transition-all p-2.5 sm:p-3 shadow-md space-y-2 ${
                 isFocused
                   ? 'border-amber-500/70 ring-1 ring-amber-500/20 shadow-amber-500/5'
                   : 'border-slate-800 hover:border-slate-700'
               }`}
             >
-              {/* Ultra-Compact Header & Selector Bar */}
-              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800/80 pb-2">
-                {/* Left: Board Title & Display Name & Notes Summary */}
-                <div className="flex flex-wrap items-center gap-2">
-                  <div className="flex items-center gap-1.5">
-                    <span className={`w-2 h-2 rounded-full ${isFocused ? 'bg-amber-400 animate-pulse' : 'bg-slate-600'}`}></span>
-                    <span className="font-mono text-xs font-extrabold text-white">
-                      #{bIdx + 1}
-                    </span>
-                    <span className="px-2 py-0.5 rounded bg-amber-500/15 border border-amber-500/30 text-amber-300 font-extrabold text-xs font-mono">
-                      {displayName}
-                    </span>
-                  </div>
+              {/* Top Close Button (floating in corner) */}
+              {fretboards.length > 1 && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    removeBoard(board.id);
+                  }}
+                  className="absolute top-2.5 right-2.5 w-5 h-5 rounded-full bg-slate-950/80 hover:bg-rose-950 text-slate-500 hover:text-rose-400 border border-slate-800 hover:border-rose-700/60 flex items-center justify-center transition text-xs font-bold leading-none z-10"
+                  title="Remove this fretboard"
+                >
+                  &times;
+                </button>
+              )}
 
-                  {/* Single Line Subtle Notes Reference */}
-                  <div className="flex items-center gap-1 text-[11px] text-slate-300 font-mono bg-slate-950/80 px-2 py-0.5 rounded border border-slate-800/70">
-                    <span className="text-[10px] text-slate-500 font-sans uppercase font-bold mr-0.5">Notes:</span>
-                    {board.targetType === 'chord'
-                      ? activeQuality.intervals.map((interval, iIdx) => {
-                          const semitone = (board.rootSemitone + interval) % 12;
-                          const noteName = getNoteName(semitone, board.accidental);
-                          const info = getIntervalInfo(interval, activeQuality);
-                          return (
-                            <span key={interval} className="inline-flex items-center gap-0.5">
-                              {iIdx > 0 && <span className="text-slate-600 font-normal">·</span>}
-                              <span className="font-semibold text-slate-200">{noteName}</span>
-                              <span className="text-[9.5px] opacity-70">({info.name})</span>
-                            </span>
-                          );
-                        })
-                      : activeScale.intervals.map((interval, iIdx) => {
-                          const semitone = (board.rootSemitone + interval) % 12;
-                          const noteName = getNoteName(semitone, board.accidental);
-                          const info = getScaleIntervalInfo(interval, activeScale);
-                          return (
-                            <span key={interval} className="inline-flex items-center gap-0.5">
-                              {iIdx > 0 && <span className="text-slate-600 font-normal">·</span>}
-                              <span className="font-semibold text-slate-200">{noteName}</span>
-                              <span className="text-[9.5px] opacity-70">({info.name})</span>
-                            </span>
-                          );
-                        })}
-                  </div>
+              {/* Ultra-Compact Single Row Controls */}
+              <div className="flex flex-wrap items-center gap-2 pr-6 text-xs">
+                {/* Board Index Indicator */}
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <span className={`w-2 h-2 rounded-full ${isFocused ? 'bg-amber-400 animate-pulse' : 'bg-slate-600'}`}></span>
+                  <span className="font-mono text-[11px] font-bold text-slate-400">#{bIdx + 1}</span>
                 </div>
 
-                {/* Right: Board Card Controls (Duplicate, Remove) */}
-                <div className="flex items-center gap-1">
+                {/* Chord / Scale Toggle Pill */}
+                <div className="bg-slate-950 border border-slate-800 rounded-lg p-0.5 flex items-center shrink-0 font-medium">
                   <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      duplicateBoard(bIdx);
-                    }}
-                    disabled={fretboards.length >= 5}
-                    className="px-1.5 py-1 text-[10.5px] font-bold text-slate-400 hover:text-white bg-slate-950 hover:bg-slate-800 rounded border border-slate-800 transition flex items-center gap-1"
-                    title="Duplicate this fretboard"
+                    onClick={() => updateBoard(board.id, { targetType: 'chord' })}
+                    className={`px-2 py-0.5 rounded text-[11px] font-bold transition ${
+                      board.targetType === 'chord'
+                        ? 'bg-emerald-500 text-slate-950 shadow-sm'
+                        : 'text-slate-400 hover:text-white'
+                    }`}
                   >
-                    <span>Copy</span>
+                    Chord
                   </button>
-
-                  {fretboards.length > 1 && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        removeBoard(board.id);
-                      }}
-                      className="px-1.5 py-1 text-[10.5px] font-bold text-rose-400 hover:text-rose-200 bg-slate-950 hover:bg-rose-950/40 rounded border border-slate-800 hover:border-rose-800/60 transition flex items-center gap-1"
-                      title="Remove this fretboard"
-                    >
-                      <span>Remove</span>
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              {/* Compact Inline Selector Rows */}
-              <div className="space-y-1.5 text-xs">
-                {/* Row 1: Type (Chord/Scale) + Compact Root Strip + Accidental */}
-                <div className="flex flex-wrap items-center gap-2">
-                  {/* Chord vs Scale Pill Switcher */}
-                  <div className="bg-slate-950 border border-slate-800 rounded-lg p-0.5 flex items-center shrink-0">
-                    <button
-                      onClick={() => updateBoard(board.id, { targetType: 'chord' })}
-                      className={`px-2 py-0.5 rounded text-[11px] font-bold transition ${
-                        board.targetType === 'chord'
-                          ? 'bg-emerald-500 text-slate-950 shadow-sm'
-                          : 'text-slate-400 hover:text-white'
-                      }`}
-                    >
-                      Chord
-                    </button>
-                    <button
-                      onClick={() => updateBoard(board.id, { targetType: 'scale' })}
-                      className={`px-2 py-0.5 rounded text-[11px] font-bold transition ${
-                        board.targetType === 'scale'
-                          ? 'bg-emerald-500 text-slate-950 shadow-sm'
-                          : 'text-slate-400 hover:text-white'
-                      }`}
-                    >
-                      Scale
-                    </button>
-                  </div>
-
-                  {/* Root note pills (Ultra-compact) */}
-                  <div className="flex items-center gap-0.5 overflow-x-auto pb-0.5">
-                    {Array.from({ length: 12 }, (_, i) => {
-                      const note = getNoteName(i, board.accidental);
-                      const isSelected = i === board.rootSemitone;
-                      return (
-                        <button
-                          key={i}
-                          onClick={() => updateBoard(board.id, { rootSemitone: i })}
-                          className={`w-6 h-6 rounded font-mono text-[11px] font-bold transition flex items-center justify-center border ${
-                            isSelected
-                              ? 'bg-amber-500 text-slate-950 border-amber-400 shadow scale-105 z-10'
-                              : 'bg-slate-950 text-slate-300 border-slate-800 hover:bg-slate-800 hover:text-white'
-                          }`}
-                        >
-                          {note}
-                        </button>
-                      );
-                    })}
-                  </div>
-
-                  {/* Accidental toggle */}
                   <button
-                    onClick={() => updateBoard(board.id, { accidental: board.accidental === 'b' ? '#' : 'b' })}
-                    className="px-1.5 py-0.5 rounded bg-slate-950 text-amber-400 font-mono text-xs border border-slate-800 hover:border-slate-700 font-bold shrink-0"
-                    title="Toggle Accidentals"
+                    onClick={() => updateBoard(board.id, { targetType: 'scale' })}
+                    className={`px-2 py-0.5 rounded text-[11px] font-bold transition ${
+                      board.targetType === 'scale'
+                        ? 'bg-emerald-500 text-slate-950 shadow-sm'
+                        : 'text-slate-400 hover:text-white'
+                    }`}
                   >
-                    {board.accidental === 'b' ? '♭' : '♯'}
+                    Scale
                   </button>
                 </div>
 
-                {/* Row 2: Chord Quality or Scale Quality Pills */}
-                <div className="flex items-center gap-1 overflow-x-auto pb-1">
+                {/* Root note pills */}
+                <div className="flex items-center gap-0.5 overflow-x-auto pb-0.5 shrink-0">
+                  {Array.from({ length: 12 }, (_, i) => {
+                    const note = getNoteName(i, board.accidental);
+                    const isSelected = i === board.rootSemitone;
+                    return (
+                      <button
+                        key={i}
+                        onClick={() => updateBoard(board.id, { rootSemitone: i })}
+                        className={`w-6 h-6 rounded font-mono text-[11px] font-bold transition flex items-center justify-center border ${
+                          isSelected
+                            ? 'bg-amber-500 text-slate-950 border-amber-400 shadow scale-105 z-10'
+                            : 'bg-slate-950 text-slate-300 border-slate-800 hover:bg-slate-800 hover:text-white'
+                        }`}
+                      >
+                        {note}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Accidental toggle (b / #) */}
+                <button
+                  onClick={() => updateBoard(board.id, { accidental: board.accidental === 'b' ? '#' : 'b' })}
+                  className="px-1.5 py-0.5 rounded bg-slate-950 text-amber-400 font-mono text-xs border border-slate-800 hover:border-slate-700 font-bold shrink-0"
+                  title="Toggle Accidentals"
+                >
+                  {board.accidental === 'b' ? '♭' : '♯'}
+                </button>
+
+                {/* Quality / Scale Dropdown Selector */}
+                <div className="shrink-0">
                   {board.targetType === 'chord' ? (
-                    Object.entries(CHORD_DEFINITIONS).map(([key, chord]) => {
-                      const isSelected = key === board.qualityKey;
-                      return (
-                        <button
-                          key={key}
-                          onClick={() => updateBoard(board.id, { qualityKey: key })}
-                          className={`px-2 py-0.5 rounded text-[11px] font-medium whitespace-nowrap transition border ${
-                            isSelected
-                              ? 'bg-emerald-500 text-slate-950 border-emerald-400 shadow-sm font-bold scale-105'
-                              : 'bg-slate-950/80 text-slate-400 border-slate-800/80 hover:bg-slate-800 hover:text-white'
-                          }`}
-                        >
-                          {chord.name}
-                        </button>
-                      );
-                    })
+                    <select
+                      value={board.qualityKey}
+                      onChange={(e) => updateBoard(board.id, { qualityKey: e.target.value })}
+                      className="px-2.5 py-1 text-xs font-bold bg-slate-950 text-emerald-400 border border-emerald-500/30 rounded-lg cursor-pointer transition focus:outline-none focus:border-emerald-400"
+                    >
+                      {Object.entries(CHORD_DEFINITIONS).map(([key, chord]) => (
+                        <option key={key} value={key} className="bg-slate-900 text-slate-200">
+                          {chord.name} {chord.symbol ? `(${chord.symbol})` : ''}
+                        </option>
+                      ))}
+                    </select>
                   ) : (
-                    Object.entries(SCALE_DEFINITIONS).map(([key, scale]) => {
-                      const isSelected = key === board.scaleKey;
-                      return (
-                        <button
-                          key={key}
-                          onClick={() => updateBoard(board.id, { scaleKey: key })}
-                          className={`px-2 py-0.5 rounded text-[11px] font-medium whitespace-nowrap transition border ${
-                            isSelected
-                              ? 'bg-emerald-500 text-slate-950 border-emerald-400 shadow-sm font-bold scale-105'
-                              : 'bg-slate-950/80 text-slate-400 border-slate-800/80 hover:bg-slate-800 hover:text-white'
-                          }`}
-                        >
+                    <select
+                      value={board.scaleKey}
+                      onChange={(e) => updateBoard(board.id, { scaleKey: e.target.value })}
+                      className="px-2.5 py-1 text-xs font-bold bg-slate-950 text-emerald-400 border border-emerald-500/30 rounded-lg cursor-pointer transition focus:outline-none focus:border-emerald-400"
+                    >
+                      {Object.entries(SCALE_DEFINITIONS).map(([key, scale]) => (
+                        <option key={key} value={key} className="bg-slate-900 text-slate-200">
                           {scale.name}
-                        </button>
-                      );
-                    })
+                        </option>
+                      ))}
+                    </select>
                   )}
+                </div>
+
+                {/* Subtle notes summary in the same row */}
+                <div className="hidden sm:flex items-center gap-1 text-[11px] text-slate-400 font-mono ml-auto">
+                  {board.targetType === 'chord'
+                    ? activeQuality.intervals.map((interval, iIdx) => {
+                        const semitone = (board.rootSemitone + interval) % 12;
+                        const noteName = getNoteName(semitone, board.accidental);
+                        const info = getIntervalInfo(interval, activeQuality);
+                        return (
+                          <span key={interval} className="inline-flex items-center gap-0.5">
+                            {iIdx > 0 && <span className="text-slate-600 font-normal">·</span>}
+                            <span className="font-bold text-slate-200">{noteName}</span>
+                            <span className="text-[9.5px] opacity-75">({info.name})</span>
+                          </span>
+                        );
+                      })
+                    : activeScale.intervals.map((interval, iIdx) => {
+                        const semitone = (board.rootSemitone + interval) % 12;
+                        const noteName = getNoteName(semitone, board.accidental);
+                        const info = getScaleIntervalInfo(interval, activeScale);
+                        return (
+                          <span key={interval} className="inline-flex items-center gap-0.5">
+                            {iIdx > 0 && <span className="text-slate-600 font-normal">·</span>}
+                            <span className="font-bold text-slate-200">{noteName}</span>
+                            <span className="text-[9.5px] opacity-75">({info.name})</span>
+                          </span>
+                        );
+                      })}
                 </div>
               </div>
 
