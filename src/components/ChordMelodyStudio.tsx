@@ -282,15 +282,41 @@ export default function ChordMelodyStudio({ initialInstrument = 'ukulele' }: Pro
     return null;
   };
 
-  const initialRootParam = getInitialParam('root')?.toLowerCase();
-  const resolvedInitialRoot = initialRootParam !== undefined && initialRootParam !== null && initialRootParam in NOTE_TO_SEMITONE
-    ? NOTE_TO_SEMITONE[initialRootParam]
-    : 9; // Default A for blues/modal
+  // Helper to parse a single board specification string e.g. "chord:A:7" or "scale:A:minor_blues"
+  const parseBoardSpec = (spec: string, idx: number): FretboardItem | null => {
+    try {
+      const parts = spec.split(':');
+      if (parts.length < 3) return null;
+      const targetType: 'chord' | 'scale' = parts[0].toLowerCase() === 'scale' ? 'scale' : 'chord';
+      const rootStr = parts[1];
+      const qualityOrScale = parts[2];
 
-  const initialQualityParam = getInitialParam('quality');
-  const resolvedInitialQuality = initialQualityParam && initialQualityParam in CHORD_DEFINITIONS
-    ? initialQualityParam
-    : '7';
+      const accidental: 'b' | '#' = rootStr.includes('#') ? '#' : 'b';
+      const rootLower = rootStr.toLowerCase();
+      const rootSemitone = rootLower in NOTE_TO_SEMITONE ? NOTE_TO_SEMITONE[rootLower] : 9;
+
+      let qualityKey = '7';
+      let scaleKey = 'minor_blues';
+
+      if (targetType === 'scale') {
+        scaleKey = qualityOrScale in SCALE_DEFINITIONS ? qualityOrScale : (qualityOrScale === 'blues' ? 'minor_blues' : 'major');
+      } else {
+        qualityKey = qualityOrScale in CHORD_DEFINITIONS ? qualityOrScale : '7';
+      }
+
+      return {
+        id: `fb-init-${idx}`,
+        title: `Fretboard ${idx + 1}`,
+        targetType,
+        rootSemitone,
+        qualityKey,
+        scaleKey,
+        accidental
+      };
+    } catch {
+      return null;
+    }
+  };
 
   const initialAccParam = getInitialParam('acc');
   const resolvedInitialAcc = initialAccParam === 'sharp' ? '#' : 'b';
@@ -301,15 +327,50 @@ export default function ChordMelodyStudio({ initialInstrument = 'ukulele' }: Pro
   const initialTuningParam = getInitialParam('tuning');
   const resolvedInitialTuning = initialTuningParam === 'low-g' ? 'low-g' : 'high-g';
 
-  const initialTargetTypeParam = getInitialParam('type');
-  const resolvedInitialTargetType: 'chord' | 'scale' = initialTargetTypeParam === 'scale' ? 'scale' : 'chord';
+  // Multi-board param: boards=chord:A:7,chord:D:7,chord:E:7 or boards=scale:A:minor_blues,chord:A:7
+  const initialBoardsParam = getInitialParam('boards');
+  let parsedBoards: FretboardItem[] = [];
+  if (initialBoardsParam) {
+    const specs = initialBoardsParam.split(',');
+    parsedBoards = specs
+      .map((s, i) => parseBoardSpec(s.trim(), i))
+      .filter((b): b is FretboardItem => b !== null);
+  }
 
-  const initialScaleParam = getInitialParam('scale');
-  let resolvedInitialScale = 'minor_blues';
-  if (initialScaleParam === 'blues') {
-    resolvedInitialScale = 'minor_blues';
-  } else if (initialScaleParam && initialScaleParam in SCALE_DEFINITIONS) {
-    resolvedInitialScale = initialScaleParam;
+  // Fallback to single-board legacy params (root, quality, scale, type)
+  if (parsedBoards.length === 0) {
+    const initialRootParam = getInitialParam('root')?.toLowerCase();
+    const resolvedInitialRoot = initialRootParam !== undefined && initialRootParam !== null && initialRootParam in NOTE_TO_SEMITONE
+      ? NOTE_TO_SEMITONE[initialRootParam]
+      : 9; // Default A for blues/modal
+
+    const initialQualityParam = getInitialParam('quality');
+    const resolvedInitialQuality = initialQualityParam && initialQualityParam in CHORD_DEFINITIONS
+      ? initialQualityParam
+      : '7';
+
+    const initialTargetTypeParam = getInitialParam('type');
+    const resolvedInitialTargetType: 'chord' | 'scale' = initialTargetTypeParam === 'scale' ? 'scale' : 'chord';
+
+    const initialScaleParam = getInitialParam('scale');
+    let resolvedInitialScale = 'minor_blues';
+    if (initialScaleParam === 'blues') {
+      resolvedInitialScale = 'minor_blues';
+    } else if (initialScaleParam && initialScaleParam in SCALE_DEFINITIONS) {
+      resolvedInitialScale = initialScaleParam;
+    }
+
+    parsedBoards = [
+      {
+        id: 'fb-1',
+        title: 'Fretboard 1',
+        targetType: resolvedInitialTargetType,
+        rootSemitone: resolvedInitialRoot,
+        qualityKey: resolvedInitialQuality,
+        scaleKey: resolvedInitialScale,
+        accidental: resolvedInitialAcc
+      }
+    ];
   }
 
   // Global settings
@@ -320,47 +381,46 @@ export default function ChordMelodyStudio({ initialInstrument = 'ukulele' }: Pro
   const [activeBoardIndex, setActiveBoardIndex] = useState<number>(0);
 
   // Stack of fretboards
-  const [fretboards, setFretboards] = useState<FretboardItem[]>([
-    {
-      id: 'fb-1',
-      title: 'Fretboard 1',
-      targetType: resolvedInitialTargetType,
-      rootSemitone: resolvedInitialRoot,
-      qualityKey: resolvedInitialQuality,
-      scaleKey: resolvedInitialScale,
-      accidental: resolvedInitialAcc
-    }
-  ]);
+  const [fretboards, setFretboards] = useState<FretboardItem[]>(parsedBoards);
 
   // Keep activeBoardIndex in bounds
   const safeActiveIndex = Math.min(activeBoardIndex, fretboards.length - 1);
   const focusedBoard = fretboards[safeActiveIndex] || fretboards[0];
 
-  // Sync first board's state to URL search parameters
+  // Sync full multi-board stack state to URL search parameters
   React.useEffect(() => {
     if (typeof window === 'undefined') return;
     const params = new URLSearchParams();
 
-    if (focusedBoard) {
-      const rootName = focusedBoard.accidental === 'b' ? CHROMATIC_FLATS[focusedBoard.rootSemitone] : CHROMATIC_SHARPS[focusedBoard.rootSemitone];
-      params.set('root', rootName);
+    // 1. Full board stack parameter: boards=chord:A:7,chord:D:7,chord:E:7
+    const boardSpecs = fretboards.map(b => {
+      const rootName = b.accidental === 'b' ? CHROMATIC_FLATS[b.rootSemitone] : CHROMATIC_SHARPS[b.rootSemitone];
+      const qualityOrScale = b.targetType === 'scale' ? b.scaleKey : b.qualityKey;
+      return `${b.targetType}:${rootName}:${qualityOrScale}`;
+    });
+    params.set('boards', boardSpecs.join(','));
 
+    // 2. Focused/First board convenience params for quick readability and backwards compatibility
+    if (focusedBoard) {
+      const primaryRoot = focusedBoard.accidental === 'b' ? CHROMATIC_FLATS[focusedBoard.rootSemitone] : CHROMATIC_SHARPS[focusedBoard.rootSemitone];
+      params.set('root', primaryRoot);
       if (focusedBoard.targetType === 'scale') {
         params.set('type', 'scale');
         params.set('scale', focusedBoard.scaleKey);
       } else {
         params.set('quality', focusedBoard.qualityKey);
       }
-
       if (focusedBoard.accidental === '#') {
         params.set('acc', 'sharp');
       }
     }
 
+    // 3. Mode (Intervals vs Notes)
     if (labelMode === 'notes') {
       params.set('mode', 'notes');
     }
 
+    // 4. Ukulele tuning (High-G vs Low-G)
     if (instrument === 'ukulele' && tuning === 'low-g') {
       params.set('tuning', 'low-g');
     }
@@ -368,7 +428,7 @@ export default function ChordMelodyStudio({ initialInstrument = 'ukulele' }: Pro
     const newQuery = params.toString();
     const newRelativePathQuery = window.location.pathname + (newQuery ? `?${newQuery}` : '');
     window.history.replaceState(null, '', newRelativePathQuery);
-  }, [focusedBoard, labelMode, tuning, instrument]);
+  }, [fretboards, focusedBoard, labelMode, tuning, instrument]);
 
   // Audio Context & Player
   const audioCtxRef = useRef<AudioContext | null>(null);
