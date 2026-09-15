@@ -212,8 +212,68 @@ const NOTE_TO_SEMITONE: Record<string, number> = {
   'a#': 10, 'bb': 10, 'b': 11
 };
 
+
+export interface FretboardItem {
+  id: string;
+  title?: string;
+  targetType: 'chord' | 'scale';
+  rootSemitone: number;
+  qualityKey: string;
+  scaleKey: string;
+  accidental: 'b' | '#';
+}
+
+interface PresetOption {
+  name: string;
+  description: string;
+  boards: Array<{
+    title: string;
+    targetType: 'chord' | 'scale';
+    rootSemitone: number;
+    qualityKey: string;
+    scaleKey: string;
+    accidental: 'b' | '#';
+  }>;
+}
+
+const PRESETS: PresetOption[] = [
+  {
+    name: '12-Bar Blues in A (A7 · D7 · E7)',
+    description: 'I - IV - V dominant 7th chords for blues progression',
+    boards: [
+      { title: 'I Chord (A7)', targetType: 'chord', rootSemitone: 9, qualityKey: '7', scaleKey: 'minor_blues', accidental: '#' },
+      { title: 'IV Chord (D7)', targetType: 'chord', rootSemitone: 2, qualityKey: '7', scaleKey: 'minor_blues', accidental: '#' },
+      { title: 'V Chord (E7)', targetType: 'chord', rootSemitone: 4, qualityKey: '7', scaleKey: 'minor_blues', accidental: '#' }
+    ]
+  },
+  {
+    name: 'Blues Soloing: A Minor Blues + A7',
+    description: 'Stacking the hexatonic blue notes over the I7 dominant chord',
+    boards: [
+      { title: 'Lead Scale (A Minor Blues)', targetType: 'scale', rootSemitone: 9, qualityKey: '7', scaleKey: 'minor_blues', accidental: '#' },
+      { title: 'Underlying Chord (A7)', targetType: 'chord', rootSemitone: 9, qualityKey: '7', scaleKey: 'minor_blues', accidental: '#' }
+    ]
+  },
+  {
+    name: 'Major vs Minor Blues in A',
+    description: 'Compare sweet major blues vs gritty minor blues',
+    boards: [
+      { title: 'A Major Blues (Sweet / Country)', targetType: 'scale', rootSemitone: 9, qualityKey: '7', scaleKey: 'major_blues', accidental: '#' },
+      { title: 'A Minor Blues (Gritty / Chicago)', targetType: 'scale', rootSemitone: 9, qualityKey: '7', scaleKey: 'minor_blues', accidental: '#' }
+    ]
+  },
+  {
+    name: 'Jazz 2-5-1 in C (Dm7 · G7 · Cmaj7)',
+    description: 'Standard jazz cadence voice leading',
+    boards: [
+      { title: 'ii Chord (Dm7)', targetType: 'chord', rootSemitone: 2, qualityKey: 'm7', scaleKey: 'major', accidental: 'b' },
+      { title: 'V Chord (G7)', targetType: 'chord', rootSemitone: 7, qualityKey: '7', scaleKey: 'major', accidental: 'b' },
+      { title: 'I Chord (Cmaj7)', targetType: 'chord', rootSemitone: 0, qualityKey: 'maj7', scaleKey: 'major', accidental: 'b' }
+    ]
+  }
+];
+
 export default function ChordMelodyStudio({ initialInstrument = 'ukulele' }: Props) {
-  // Read initial values from URL query string if present (client-side only)
   const getInitialParam = (key: string): string | null => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
@@ -225,85 +285,82 @@ export default function ChordMelodyStudio({ initialInstrument = 'ukulele' }: Pro
   const initialRootParam = getInitialParam('root')?.toLowerCase();
   const resolvedInitialRoot = initialRootParam !== undefined && initialRootParam !== null && initialRootParam in NOTE_TO_SEMITONE
     ? NOTE_TO_SEMITONE[initialRootParam]
-    : 0; // Default C
+    : 9; // Default A for blues/modal
 
   const initialQualityParam = getInitialParam('quality');
   const resolvedInitialQuality = initialQualityParam && initialQualityParam in CHORD_DEFINITIONS
     ? initialQualityParam
-    : 'maj'; // Default Major
+    : '7';
 
   const initialAccParam = getInitialParam('acc');
-  const resolvedInitialAcc = initialAccParam === 'sharp' ? '#' : 'b'; // Default flats
+  const resolvedInitialAcc = initialAccParam === 'sharp' ? '#' : '#';
 
   const initialModeParam = getInitialParam('mode');
-  const resolvedInitialMode = initialModeParam === 'notes' ? 'notes' : 'degrees'; // Default intervals
+  const resolvedInitialMode = initialModeParam === 'notes' ? 'notes' : 'degrees';
 
   const initialTuningParam = getInitialParam('tuning');
   const resolvedInitialTuning = initialTuningParam === 'low-g' ? 'low-g' : 'high-g';
-
-  const initialMelodyParam = getInitialParam('melody');
-  let resolvedInitialMelody: string | number = 'all';
-  if (initialMelodyParam && initialMelodyParam.toLowerCase() in NOTE_TO_SEMITONE) {
-    resolvedInitialMelody = NOTE_TO_SEMITONE[initialMelodyParam.toLowerCase()];
-  }
 
   const initialTargetTypeParam = getInitialParam('type');
   const resolvedInitialTargetType: 'chord' | 'scale' = initialTargetTypeParam === 'scale' ? 'scale' : 'chord';
 
   const initialScaleParam = getInitialParam('scale');
-  let resolvedInitialScale = 'major';
+  let resolvedInitialScale = 'minor_blues';
   if (initialScaleParam === 'blues') {
     resolvedInitialScale = 'minor_blues';
   } else if (initialScaleParam && initialScaleParam in SCALE_DEFINITIONS) {
     resolvedInitialScale = initialScaleParam;
   }
 
+  // Global settings
   const [instrument, setInstrument] = useState<InstrumentType>(initialInstrument);
-  const [targetType, setTargetType] = useState<'chord' | 'scale'>(resolvedInitialTargetType);
-  const [rootSemitone, setRootSemitone] = useState<number>(resolvedInitialRoot);
-  const [qualityKey, setQualityKey] = useState<string>(resolvedInitialQuality);
-  const [scaleKey, setScaleKey] = useState<string>(resolvedInitialScale);
-  const [accidental, setAccidental] = useState<'b' | '#'>(resolvedInitialAcc);
   const [tuning, setTuning] = useState<'high-g' | 'low-g'>(resolvedInitialTuning);
   const [labelMode, setLabelMode] = useState<'notes' | 'degrees'>(resolvedInitialMode);
-  const [melodyFilter, setMelodyFilter] = useState<string | number>(resolvedInitialMelody);
   const [helpOpen, setHelpOpen] = useState<boolean>(false);
+  const [activeBoardIndex, setActiveBoardIndex] = useState<number>(0);
 
-  // Sync state to URL search parameters
+  // Stack of fretboards
+  const [fretboards, setFretboards] = useState<FretboardItem[]>([
+    {
+      id: 'fb-1',
+      title: 'Fretboard 1',
+      targetType: resolvedInitialTargetType,
+      rootSemitone: resolvedInitialRoot,
+      qualityKey: resolvedInitialQuality,
+      scaleKey: resolvedInitialScale,
+      accidental: resolvedInitialAcc
+    }
+  ]);
+
+  // Keep activeBoardIndex in bounds
+  const safeActiveIndex = Math.min(activeBoardIndex, fretboards.length - 1);
+  const focusedBoard = fretboards[safeActiveIndex] || fretboards[0];
+
+  // Sync first board's state to URL search parameters
   React.useEffect(() => {
     if (typeof window === 'undefined') return;
     const params = new URLSearchParams();
 
-    // 1. root (e.g. C, G, Db, F#)
-    const rootName = accidental === 'b' ? CHROMATIC_FLATS[rootSemitone] : CHROMATIC_SHARPS[rootSemitone];
-    params.set('root', rootName);
+    if (focusedBoard) {
+      const rootName = focusedBoard.accidental === 'b' ? CHROMATIC_FLATS[focusedBoard.rootSemitone] : CHROMATIC_SHARPS[focusedBoard.rootSemitone];
+      params.set('root', rootName);
 
-    // 2. target type (chord or scale)
-    if (targetType === 'scale') {
-      params.set('type', 'scale');
-      params.set('scale', scaleKey);
-    } else {
-      // quality (e.g. maj, min, maj7, 7, m7, aug)
-      params.set('quality', qualityKey);
+      if (focusedBoard.targetType === 'scale') {
+        params.set('type', 'scale');
+        params.set('scale', focusedBoard.scaleKey);
+      } else {
+        params.set('quality', focusedBoard.qualityKey);
+      }
+
+      if (focusedBoard.accidental === '#') {
+        params.set('acc', 'sharp');
+      }
     }
 
-    // 3. mode (only if switched from default 'degrees' to 'notes')
     if (labelMode === 'notes') {
       params.set('mode', 'notes');
     }
 
-    // 4. acc (default is flats 'b'; only parameterize if sharp)
-    if (accidental === '#') {
-      params.set('acc', 'sharp');
-    }
-
-    // 5. melody (only if a specific top note is selected and in chord mode)
-    if (targetType === 'chord' && melodyFilter !== 'all' && typeof melodyFilter === 'number') {
-      const melodyName = accidental === 'b' ? CHROMATIC_FLATS[melodyFilter] : CHROMATIC_SHARPS[melodyFilter];
-      params.set('melody', melodyName);
-    }
-
-    // 6. tuning (ukulele only, default is high-g; parameterize if low-g)
     if (instrument === 'ukulele' && tuning === 'low-g') {
       params.set('tuning', 'low-g');
     }
@@ -311,8 +368,9 @@ export default function ChordMelodyStudio({ initialInstrument = 'ukulele' }: Pro
     const newQuery = params.toString();
     const newRelativePathQuery = window.location.pathname + (newQuery ? `?${newQuery}` : '');
     window.history.replaceState(null, '', newRelativePathQuery);
-  }, [rootSemitone, targetType, qualityKey, scaleKey, labelMode, accidental, melodyFilter, tuning, instrument]);
+  }, [focusedBoard, labelMode, tuning, instrument]);
 
+  // Audio Context & Player
   const audioCtxRef = useRef<AudioContext | null>(null);
 
   const getAudioContext = useCallback(() => {
@@ -370,14 +428,12 @@ export default function ChordMelodyStudio({ initialInstrument = 'ukulele' }: Pro
 
     let midiPitches: number[] = [];
     if (instrument === 'ukulele') {
-      midiPitches = [
-        (tuning === 'low-g' ? 55 : 67) + frets[0], // String 4 (G)
-        60 + frets[1],                             // String 3 (C)
-        64 + frets[2],                             // String 2 (E)
-        69 + frets[3]                              // String 1 (A)
-      ];
+      const gMidi = tuning === 'low-g' ? 55 : 67;
+      const baseMidis = [gMidi, 60, 64, 69];
+      midiPitches = frets
+        .map((f, i) => (f >= 0 ? baseMidis[i] + f : null))
+        .filter((p): p is number => p !== null);
     } else {
-      // Guitar: Strings 6, 5, 4, 3, 2, 1
       const baseMidis = [40, 45, 50, 55, 59, 64];
       midiPitches = frets
         .map((f, i) => (f >= 0 ? baseMidis[i] + f : null))
@@ -390,10 +446,10 @@ export default function ChordMelodyStudio({ initialInstrument = 'ukulele' }: Pro
     });
   }, [getAudioContext, playNote, instrument, tuning]);
 
-  const getNoteName = useCallback((semitone: number, acc = accidental) => {
+  const getNoteName = useCallback((semitone: number, acc: 'b' | '#' = '#') => {
     const normalized = ((semitone % 12) + 12) % 12;
     return acc === 'b' ? CHROMATIC_FLATS[normalized] : CHROMATIC_SHARPS[normalized];
-  }, [accidental]);
+  }, []);
 
   const getIntervalInfo = useCallback((intervalSemitone: number, qualityDef: ChordDefinition) => {
     const idx = qualityDef.intervals.indexOf(intervalSemitone);
@@ -447,11 +503,9 @@ export default function ChordMelodyStudio({ initialInstrument = 'ukulele' }: Pro
     return { name: 'Ext', scaleDegree: 0, colorClass: 'bg-teal-500 text-white', bgHex: '#14b8a6' };
   }, []);
 
-  // Ukulele CAGFD shape classifier
+  // Ukulele shape classifier
   const classifyUkuleleShape = useCallback((frets: number[], root: number, qKey: string) => {
     const archetypes = UKULELE_CAGFD_ARCHETYPES[qKey] || UKULELE_CAGFD_ARCHETYPES['maj'];
-
-    // 1. Exact transposed shape match
     for (const arch of archetypes) {
       const shift = (root - arch.root + 12) % 12;
       const exactFrets = arch.frets.map(f => f + shift);
@@ -459,53 +513,22 @@ export default function ChordMelodyStudio({ initialInstrument = 'ukulele' }: Pro
         return arch.name;
       }
     }
-
-    // 2. 3-string match (Melody extension or alternate bass)
-    for (const arch of archetypes) {
-      const shift = (root - arch.root + 12) % 12;
-      const exactFrets = arch.frets.map(f => f + shift);
-
-      // Strings 4, 3, 2 match and string 1 (melody) differs -> Melody extension
-      if (frets[0] === exactFrets[0] && frets[1] === exactFrets[1] && frets[2] === exactFrets[2]) {
-        return `${arch.name} (Ext)`;
-      }
-      // Strings 3, 2, 1 match and string 4 (bass) differs -> Alternate bass
-      if (frets[1] === exactFrets[1] && frets[2] === exactFrets[2] && frets[3] === exactFrets[3]) {
-        return `${arch.name} (Alt Bass)`;
-      }
-    }
-
-    // 3. Structural root position fallback
-    const notes = [
-      (7 + frets[0]) % 12,
-      (0 + frets[1]) % 12,
-      (4 + frets[2]) % 12,
-      (9 + frets[3]) % 12
-    ];
-    if (notes[2] === root && frets[0] >= frets[2]) return 'D-Shape (Ext)';
-    if (notes[3] === root) return 'C-Shape (Ext)';
-    if (notes[0] === root && notes[2] === root) return 'F-Shape (Ext)';
-    if (notes[0] === root) return 'A-Shape (Ext)';
-    if (notes[1] === root) return 'G-Shape (Ext)';
-
     const nonZero = frets.filter(f => f > 0);
     const avgFret = nonZero.length ? nonZero.reduce((a, b) => a + b, 0) / nonZero.length : 0;
-    const positions = [
-      { name: 'C-Shape', fret: (root - 0 + 12) % 12 },
-      { name: 'A-Shape', fret: (root - 9 + 12) % 12 },
-      { name: 'G-Shape', fret: (root - 7 + 12) % 12 },
-      { name: 'F-Shape', fret: (root - 5 + 12) % 12 },
-      { name: 'D-Shape', fret: (root - 2 + 12) % 12 }
-    ];
+    const positions = archetypes.map(arch => {
+      const shift = (root - arch.root + 12) % 12;
+      return { name: arch.name, fret: shift };
+    });
     positions.sort((a, b) => Math.abs(a.fret - avgFret) - Math.abs(b.fret - avgFret));
     return `${positions[0].name} (Var)`;
   }, []);
 
-  // Generate Ukulele Voicings
+  // Voicings generator for the focused board
   const generateUkuleleVoicings = useCallback(() => {
-    const quality = CHORD_DEFINITIONS[qualityKey] || CHORD_DEFINITIONS['maj'];
-    const targetChordSemitones = new Set(quality.intervals.map(i => (rootSemitone + i) % 12));
-    const requiredNotes = quality.intervals.map(i => (rootSemitone + i) % 12);
+    if (!focusedBoard || focusedBoard.targetType !== 'chord') return [];
+    const quality = CHORD_DEFINITIONS[focusedBoard.qualityKey] || CHORD_DEFINITIONS['maj'];
+    const targetChordSemitones = new Set(quality.intervals.map(i => (focusedBoard.rootSemitone + i) % 12));
+    const requiredNotes = quality.intervals.map(i => (focusedBoard.rootSemitone + i) % 12);
     const maxFret = 14;
 
     const stringNotes = [
@@ -554,13 +577,13 @@ export default function ChordMelodyStudio({ initialInstrument = 'ukulele' }: Pro
               const topVoice = midiValues[0];
               const bassVoice = [...midiValues].sort((a, b) => a.midi - b.midi)[0];
 
-              const bassInterval = (bassVoice.semitone - rootSemitone + 12) % 12;
+              const bassInterval = (bassVoice.semitone - focusedBoard.rootSemitone + 12) % 12;
               let inversionLabel = 'Root Position';
               if (bassInterval === 3 || bassInterval === 4) inversionLabel = '1st Inversion (3rd in bass)';
               else if (bassInterval === 6 || bassInterval === 7 || bassInterval === 8) inversionLabel = '2nd Inversion (5th in bass)';
               else if (bassInterval >= 9) inversionLabel = '3rd Inversion (7th in bass)';
 
-              const shapeName = classifyUkuleleShape(frets, rootSemitone, qualityKey);
+              const shapeName = classifyUkuleleShape(frets, focusedBoard.rootSemitone, focusedBoard.qualityKey);
               seenFretKeys.add(key);
               validVoicings.push({
                 frets,
@@ -580,30 +603,28 @@ export default function ChordMelodyStudio({ initialInstrument = 'ukulele' }: Pro
 
     validVoicings.sort((a, b) => (a.minFret !== b.minFret ? a.minFret - b.minFret : a.maxFret - b.maxFret));
     return validVoicings.slice(0, 10);
-  }, [qualityKey, rootSemitone, tuning, classifyUkuleleShape]);
+  }, [focusedBoard, tuning, classifyUkuleleShape]);
 
-  // Generate Guitar CAGED Voicings
   const generateGuitarVoicings = useCallback(() => {
-    const quality = CHORD_DEFINITIONS[qualityKey] || CHORD_DEFINITIONS['maj'];
-    const shapes = GUITAR_CAGED_SHAPES[qualityKey] || GUITAR_CAGED_SHAPES['maj'];
-    const guitarBaseMidis = [40, 45, 50, 55, 59, 64]; // Strings 6, 5, 4, 3, 2, 1
+    if (!focusedBoard || focusedBoard.targetType !== 'chord') return [];
+    const quality = CHORD_DEFINITIONS[focusedBoard.qualityKey] || CHORD_DEFINITIONS['maj'];
+    const shapes = GUITAR_CAGED_SHAPES[focusedBoard.qualityKey] || GUITAR_CAGED_SHAPES['maj'];
+    const guitarBaseMidis = [40, 45, 50, 55, 59, 64];
     const stringBaseSemitones = [4, 9, 2, 7, 11, 4];
     const stringNames = ['E', 'A', 'D', 'G', 'B', 'E'];
 
     const validVoicings: Voicing[] = [];
 
     for (const s of shapes) {
-      const rootStrIdx = 6 - s.rootString; // 6th string = idx 0, 5th string = idx 1, 4th string = idx 2
+      const rootStrIdx = 6 - s.rootString;
       const strBaseSemi = stringBaseSemitones[rootStrIdx];
-      const targetRootFret = ((rootSemitone - strBaseSemi) % 12 + 12) % 12;
+      const targetRootFret = ((focusedBoard.rootSemitone - strBaseSemi) % 12 + 12) % 12;
 
       let shift = targetRootFret - s.baseFretOffset;
       if (shift < 0) shift += 12;
 
-      // Primary position
       const frets = s.baseFrets.map(f => (f === -1 ? -1 : f + shift));
       if (frets.every(f => f <= 14 && f >= -1)) {
-        // Collect voiced notes
         const midiValues: VoiceNote[] = [];
         frets.forEach((f, idx) => {
           if (f >= 0) {
@@ -615,12 +636,11 @@ export default function ChordMelodyStudio({ initialInstrument = 'ukulele' }: Pro
         });
 
         if (midiValues.length >= 3) {
-          // Top voice (highest pitch note, tie-break by higher string number towards 1)
           midiValues.sort((a, b) => (b.midi - a.midi) || (a.string - b.string));
           const topVoice = midiValues[0];
           const bassVoice = [...midiValues].sort((a, b) => a.midi - b.midi)[0];
 
-          const bassInterval = (bassVoice.semitone - rootSemitone + 12) % 12;
+          const bassInterval = (bassVoice.semitone - focusedBoard.rootSemitone + 12) % 12;
           let inversionLabel = 'Root Position';
           if (bassInterval === 3 || bassInterval === 4) inversionLabel = '1st Inversion (3rd in bass)';
           else if (bassInterval === 6 || bassInterval === 7 || bassInterval === 8) inversionLabel = '2nd Inversion (5th in bass)';
@@ -640,7 +660,6 @@ export default function ChordMelodyStudio({ initialInstrument = 'ukulele' }: Pro
         }
       }
 
-      // Also check lower octave if shift was large (e.g. shift - 12 >= 0)
       if (shift - 12 >= 0) {
         const lowerShift = shift - 12;
         const lowerFrets = s.baseFrets.map(f => (f === -1 ? -1 : f + lowerShift));
@@ -660,7 +679,7 @@ export default function ChordMelodyStudio({ initialInstrument = 'ukulele' }: Pro
             const topVoice = midiValues[0];
             const bassVoice = [...midiValues].sort((a, b) => a.midi - b.midi)[0];
 
-            const bassInterval = (bassVoice.semitone - rootSemitone + 12) % 12;
+            const bassInterval = (bassVoice.semitone - focusedBoard.rootSemitone + 12) % 12;
             let inversionLabel = 'Root Position';
             if (bassInterval === 3 || bassInterval === 4) inversionLabel = '1st Inversion (3rd in bass)';
             else if (bassInterval === 6 || bassInterval === 7 || bassInterval === 8) inversionLabel = '2nd Inversion (5th in bass)';
@@ -684,27 +703,13 @@ export default function ChordMelodyStudio({ initialInstrument = 'ukulele' }: Pro
 
     validVoicings.sort((a, b) => a.minFret - b.minFret);
     return validVoicings;
-  }, [qualityKey, rootSemitone]);
+  }, [focusedBoard]);
 
-  // Active Voicings
   const voicings = useMemo(() => {
     return instrument === 'ukulele' ? generateUkuleleVoicings() : generateGuitarVoicings();
   }, [instrument, generateUkuleleVoicings, generateGuitarVoicings]);
 
-  // Filtered Voicings
-  const displayedVoicings = useMemo(() => {
-    if (melodyFilter === 'all') return voicings;
-    return voicings.filter(v => v.topVoice.semitone === melodyFilter);
-  }, [voicings, melodyFilter]);
-
-  const activeQuality = CHORD_DEFINITIONS[qualityKey] || CHORD_DEFINITIONS['maj'];
-  const activeScale = SCALE_DEFINITIONS[scaleKey] || SCALE_DEFINITIONS['major'];
-  const chordName = `${getNoteName(rootSemitone)}${activeQuality.symbol}`;
-  const scaleName = `${getNoteName(rootSemitone)} ${activeScale.name}`;
-  const displayName = targetType === 'chord' ? chordName : scaleName;
-  const currentStrings = instrument === 'ukulele' ? UKULELE_STRINGS : GUITAR_STRINGS;
-
-  // Logarithmic fret positions
+  // Fretboard layout geometry
   const numFrets = 14;
   const width = 890;
   const height = instrument === 'guitar' ? 116 : 100;
@@ -722,18 +727,72 @@ export default function ChordMelodyStudio({ initialInstrument = 'ukulele' }: Pro
     return arr;
   }, [startX, fretboardWidth]);
 
+  const currentStrings = instrument === 'ukulele' ? UKULELE_STRINGS : GUITAR_STRINGS;
+
+  // Board list manipulation handlers
+  const updateBoard = (id: string, updates: Partial<FretboardItem>) => {
+    setFretboards(prev => prev.map(b => (b.id === id ? { ...b, ...updates } : b)));
+  };
+
+  const addBoard = () => {
+    if (fretboards.length >= 5) return;
+    const last = fretboards[fretboards.length - 1];
+    const newBoard: FretboardItem = {
+      id: `fb-${Date.now()}`,
+      title: `Fretboard ${fretboards.length + 1}`,
+      targetType: last ? last.targetType : 'chord',
+      rootSemitone: last ? (last.rootSemitone + 5) % 12 : 2, // cycle fourth by default
+      qualityKey: last ? last.qualityKey : '7',
+      scaleKey: last ? last.scaleKey : 'minor_blues',
+      accidental: last ? last.accidental : '#'
+    };
+    setFretboards(prev => [...prev, newBoard]);
+    setActiveBoardIndex(fretboards.length);
+  };
+
+  const duplicateBoard = (index: number) => {
+    if (fretboards.length >= 5) return;
+    const target = fretboards[index];
+    const newBoard: FretboardItem = {
+      ...target,
+      id: `fb-${Date.now()}`,
+      title: `${target.title || 'Fretboard'} (Copy)`
+    };
+    const nextList = [...fretboards];
+    nextList.splice(index + 1, 0, newBoard);
+    setFretboards(nextList);
+    setActiveBoardIndex(index + 1);
+  };
+
+  const removeBoard = (id: string) => {
+    if (fretboards.length <= 1) return;
+    setFretboards(prev => prev.filter(b => b.id !== id));
+    setActiveBoardIndex(0);
+  };
+
+  const applyPreset = (preset: PresetOption) => {
+    const newBoards: FretboardItem[] = preset.boards.map((b, i) => ({
+      id: `fb-${Date.now()}-${i}`,
+      title: b.title,
+      targetType: b.targetType,
+      rootSemitone: b.rootSemitone,
+      qualityKey: b.qualityKey,
+      scaleKey: b.scaleKey,
+      accidental: b.accidental
+    }));
+    setFretboards(newBoards);
+    setActiveBoardIndex(0);
+  };
+
   return (
-    <div className="space-y-3.5">
-      {/* 1. SLIM APP BAR: Unified Instrument Toggle + Tuning & Display Controls */}
+    <div className="space-y-4">
+      {/* 1. SLIM APP BAR: Global Instrument Switcher, Mode, Presets, and Add Fretboard */}
       <div className="flex flex-wrap items-center justify-between gap-2.5 bg-slate-900/90 border border-slate-800 rounded-xl px-3.5 py-2 shadow-sm">
-        {/* Instrument Switcher */}
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Instrument Switcher */}
           <div className="bg-slate-950 border border-slate-800 rounded-lg p-0.5 flex items-center font-medium">
             <button
-              onClick={() => {
-                setInstrument('ukulele');
-                setMelodyFilter('all');
-              }}
+              onClick={() => setInstrument('ukulele')}
               className={`px-3 py-1 rounded-md text-xs font-bold transition flex items-center gap-1.5 ${
                 instrument === 'ukulele'
                   ? 'bg-amber-500 text-slate-950 shadow-sm'
@@ -745,10 +804,7 @@ export default function ChordMelodyStudio({ initialInstrument = 'ukulele' }: Pro
               <span className="text-[9px] opacity-75 font-mono">CAGFD</span>
             </button>
             <button
-              onClick={() => {
-                setInstrument('guitar');
-                setMelodyFilter('all');
-              }}
+              onClick={() => setInstrument('guitar')}
               className={`px-3 py-1 rounded-md text-xs font-bold transition flex items-center gap-1.5 ${
                 instrument === 'guitar'
                   ? 'bg-amber-500 text-slate-950 shadow-sm'
@@ -760,37 +816,49 @@ export default function ChordMelodyStudio({ initialInstrument = 'ukulele' }: Pro
               <span className="text-[9px] opacity-75 font-mono">CAGED</span>
             </button>
           </div>
+
+          {/* Quick Presets Dropdown */}
+          <div className="relative group">
+            <select
+              onChange={(e) => {
+                const idx = Number(e.target.value);
+                if (idx >= 0 && PRESETS[idx]) {
+                  applyPreset(PRESETS[idx]);
+                }
+              }}
+              value=""
+              className="px-2.5 py-1 text-xs font-bold bg-slate-950 hover:bg-slate-800 text-amber-300 border border-amber-500/30 rounded-lg cursor-pointer transition focus:outline-none"
+            >
+              <option value="" disabled>⚡ Quick Presets...</option>
+              {PRESETS.map((p, idx) => (
+                <option key={idx} value={idx} className="bg-slate-900 text-slate-200">
+                  {p.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Add Fretboard button */}
+          <button
+            onClick={addBoard}
+            disabled={fretboards.length >= 5}
+            className={`px-3 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1.5 border ${
+              fretboards.length >= 5
+                ? 'opacity-40 cursor-not-allowed bg-slate-800 text-slate-400 border-slate-700'
+                : 'bg-emerald-600 hover:bg-emerald-500 text-white border-emerald-500/40 shadow-sm'
+            }`}
+            title="Add another stacked fretboard for visual comparison"
+          >
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4" />
+            </svg>
+            <span>Add Fretboard</span>
+            <span className="text-[10px] opacity-80 font-mono">({fretboards.length}/5)</span>
+          </button>
         </div>
 
-        {/* Mode Switcher: Chords vs Scales */}
-        <div className="flex items-center gap-1 bg-slate-950 border border-slate-800 rounded-lg p-0.5 font-medium">
-          <button
-            onClick={() => setTargetType('chord')}
-            className={`px-3 py-1 rounded-md text-xs font-bold transition flex items-center gap-1 ${
-              targetType === 'chord'
-                ? 'bg-emerald-500 text-slate-950 shadow-sm'
-                : 'text-slate-400 hover:text-white'
-            }`}
-          >
-            <span>🎸</span>
-            <span>Chords</span>
-          </button>
-          <button
-            onClick={() => setTargetType('scale')}
-            className={`px-3 py-1 rounded-md text-xs font-bold transition flex items-center gap-1 ${
-              targetType === 'scale'
-                ? 'bg-emerald-500 text-slate-950 shadow-sm'
-                : 'text-slate-400 hover:text-white'
-            }`}
-          >
-            <span>🎼</span>
-            <span>Scales</span>
-          </button>
-        </div>
-
-        {/* Quick Toggles */}
+        {/* Global toggles: Tuning, Notes/Intervals, Help */}
         <div className="flex items-center gap-2 text-xs">
-          {/* Ukulele Tuning Toggle */}
           {instrument === 'ukulele' && (
             <div className="bg-slate-950 border border-slate-800 rounded-lg p-0.5 flex items-center font-medium">
               <button
@@ -824,7 +892,6 @@ export default function ChordMelodyStudio({ initialInstrument = 'ukulele' }: Pro
             </button>
           </div>
 
-          {/* Help button */}
           <button
             onClick={() => setHelpOpen(true)}
             className="p-1.5 text-slate-400 hover:text-amber-400 bg-slate-950 hover:bg-slate-800 rounded-lg border border-slate-800 transition"
@@ -837,333 +904,339 @@ export default function ChordMelodyStudio({ initialInstrument = 'ukulele' }: Pro
         </div>
       </div>
 
-      {/* 2. SHRUNK CONSOLIDATED SELECTOR & MELODY FILTER TOOLBAR */}
-      <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-3 shadow-md space-y-2.5">
-        {/* Row 1: Shrunk Root Notes */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-1">
-          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 shrink-0 mr-1">Root:</span>
-          <div className="flex items-center gap-1 shrink-0">
-            {Array.from({ length: 12 }, (_, i) => {
-              const note = getNoteName(i);
-              const isSelected = i === rootSemitone;
-              return (
-                <button
-                  key={i}
-                  onClick={() => {
-                    setRootSemitone(i);
-                    setMelodyFilter('all');
-                  }}
-                  className={`w-7 h-7 rounded-lg font-mono text-xs font-bold transition-all flex items-center justify-center border ${
-                    isSelected
-                      ? 'bg-amber-500 text-slate-950 border-amber-400 shadow scale-105 z-10'
-                      : 'bg-slate-800/80 text-slate-300 border-slate-700/60 hover:bg-slate-700 hover:text-white'
-                  }`}
-                >
-                  {note}
-                </button>
-              );
-            })}
-          </div>
+      {/* 2. MULTI-FRETBOARD STACK */}
+      <div className="space-y-3.5">
+        {fretboards.map((board, bIdx) => {
+          const isFocused = safeActiveIndex === bIdx;
+          const activeQuality = CHORD_DEFINITIONS[board.qualityKey] || CHORD_DEFINITIONS['maj'];
+          const activeScale = SCALE_DEFINITIONS[board.scaleKey] || SCALE_DEFINITIONS['major'];
+          const chordName = `${getNoteName(board.rootSemitone, board.accidental)}${activeQuality.symbol}`;
+          const scaleName = `${getNoteName(board.rootSemitone, board.accidental)} ${activeScale.name}`;
+          const displayName = board.targetType === 'chord' ? chordName : scaleName;
 
-          <div className="flex items-center gap-1 ml-auto shrink-0 pl-2">
-            <button
-              onClick={() => setAccidental(accidental === 'b' ? '#' : 'b')}
-              className="px-2 py-1 rounded bg-slate-950 text-amber-400 font-mono text-xs border border-slate-800 hover:border-slate-700 font-bold"
-              title="Toggle Accidentals"
+          return (
+            <div
+              key={board.id}
+              onClick={() => setActiveBoardIndex(bIdx)}
+              className={`bg-slate-900/95 rounded-xl border transition-all p-3 shadow-md space-y-2.5 ${
+                isFocused
+                  ? 'border-amber-500/70 ring-1 ring-amber-500/20 shadow-amber-500/5'
+                  : 'border-slate-800 hover:border-slate-700'
+              }`}
             >
-              {accidental === 'b' ? '♭' : '♯'}
-            </button>
-          </div>
-        </div>
-
-        {/* Row 2: Qualities (if chord mode) OR Scales (if scale mode) */}
-        {targetType === 'chord' ? (
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 shrink-0 mr-1">Chord:</span>
-            {Object.entries(CHORD_DEFINITIONS).map(([key, chord]) => {
-              const isSelected = key === qualityKey;
-              return (
-                <button
-                  key={key}
-                  onClick={() => {
-                    setQualityKey(key);
-                    setMelodyFilter('all');
-                  }}
-                  className={`px-2.5 py-1 rounded-md text-xs font-semibold whitespace-nowrap transition border ${
-                    isSelected
-                      ? 'bg-emerald-500 text-slate-950 border-emerald-400 shadow-sm font-bold scale-105'
-                      : 'bg-slate-800/70 text-slate-300 border-slate-700/50 hover:bg-slate-700 hover:text-white'
-                  }`}
-                >
-                  {chord.name}
-                </button>
-              );
-            })}
-          </div>
-        ) : (
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-400 shrink-0 mr-1">Scale:</span>
-            {Object.entries(SCALE_DEFINITIONS).map(([key, scale]) => {
-              const isSelected = key === scaleKey;
-              return (
-                <button
-                  key={key}
-                  onClick={() => setScaleKey(key)}
-                  className={`px-2.5 py-1 rounded-md text-xs font-semibold whitespace-nowrap transition border ${
-                    isSelected
-                      ? 'bg-emerald-500 text-slate-950 border-emerald-400 shadow-sm font-bold scale-105'
-                      : 'bg-slate-800/70 text-slate-300 border-slate-700/50 hover:bg-slate-700 hover:text-white'
-                  }`}
-                >
-                  {scale.name}
-                </button>
-              );
-            })}
-          </div>
-        )}
-
-        {/* Row 3: Active Chord/Scale Badge + Interval/Degrees Pills */}
-        <div className="pt-2 border-t border-slate-800 flex flex-wrap items-center justify-between gap-2.5">
-          <div className="flex items-center gap-2.5">
-            <span className="px-2.5 py-0.5 rounded-lg bg-amber-500/15 border border-amber-500/30 text-amber-300 font-extrabold text-base font-mono">
-              {displayName}
-            </span>
-            <div className="flex items-center gap-1 flex-wrap">
-              {targetType === 'chord' ? (
-                activeQuality.intervals.map((interval) => {
-                  const semitone = (rootSemitone + interval) % 12;
-                  const noteName = getNoteName(semitone);
-                  const info = getIntervalInfo(interval, activeQuality);
-                  return (
-                    <span
-                      key={interval}
-                      className={`px-1.5 py-0.5 rounded text-[11px] font-mono font-semibold ${info.colorClass}`}
-                    >
-                      {noteName} <span className="opacity-75 text-[9px]">({info.name})</span>
+              {/* Ultra-Compact Header & Selector Bar */}
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800/80 pb-2">
+                {/* Left: Board Title & Display Name & Notes Summary */}
+                <div className="flex flex-wrap items-center gap-2">
+                  <div className="flex items-center gap-1.5">
+                    <span className={`w-2 h-2 rounded-full ${isFocused ? 'bg-amber-400 animate-pulse' : 'bg-slate-600'}`}></span>
+                    <span className="font-mono text-xs font-extrabold text-white">
+                      #{bIdx + 1}
                     </span>
-                  );
-                })
-              ) : (
-                activeScale.intervals.map((interval, sIdx) => {
-                  const semitone = (rootSemitone + interval) % 12;
-                  const noteName = getNoteName(semitone);
-                  const info = getScaleIntervalInfo(interval, activeScale);
-                  return (
-                    <span
-                      key={interval}
-                      className={`px-1.5 py-0.5 rounded text-[11px] font-mono font-semibold ${info.colorClass}`}
-                    >
-                      {noteName} <span className="opacity-75 text-[9px]">({info.name})</span>
+                    <span className="px-2 py-0.5 rounded bg-amber-500/15 border border-amber-500/30 text-amber-300 font-extrabold text-xs font-mono">
+                      {displayName}
                     </span>
-                  );
-                })
-              )}
-            </div>
-          </div>
+                  </div>
 
-          {/* Melody Filter Inline (Chord Mode only) */}
-          {targetType === 'chord' && (
-            <div className="flex items-center gap-1.5 overflow-x-auto">
-              <span className="text-[10px] uppercase font-bold text-amber-400 whitespace-nowrap flex items-center gap-1">
-                <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
-                  <path d="M18 3a1 1 0 00-1.196-.98l-10 2A1 1 0 006 5v9.114A4.369 4.369 0 005 14c-1.657 0-3 .895-3 2s1.343 2 3 2 3-.895 3-2V7.82l8-1.6v5.894A4.37 4.37 0 0015 12c-1.657 0-3 .895-3 2s1.343 2 3 2 3-.895 3-2V3z" />
-                </svg>
-                Top Melody:
-              </span>
-              <button
-                onClick={() => setMelodyFilter('all')}
-                className={`px-2 py-0.5 rounded text-[11px] font-semibold transition ${
-                  melodyFilter === 'all'
-                    ? 'bg-amber-500 text-slate-950 font-bold'
-                    : 'bg-slate-800 text-slate-400 hover:text-white'
-                }`}
-              >
-                All
-              </button>
-              {activeQuality.intervals.map((interval) => {
-                const semitone = (rootSemitone + interval) % 12;
-                const noteName = getNoteName(semitone);
-                const info = getIntervalInfo(interval, activeQuality);
-                const isSelected = melodyFilter === semitone;
-                return (
+                  {/* Single Line Subtle Notes Reference */}
+                  <div className="flex items-center gap-1 text-[11px] text-slate-300 font-mono bg-slate-950/80 px-2 py-0.5 rounded border border-slate-800/70">
+                    <span className="text-[10px] text-slate-500 font-sans uppercase font-bold mr-0.5">Notes:</span>
+                    {board.targetType === 'chord'
+                      ? activeQuality.intervals.map((interval, iIdx) => {
+                          const semitone = (board.rootSemitone + interval) % 12;
+                          const noteName = getNoteName(semitone, board.accidental);
+                          const info = getIntervalInfo(interval, activeQuality);
+                          return (
+                            <span key={interval} className="inline-flex items-center gap-0.5">
+                              {iIdx > 0 && <span className="text-slate-600 font-normal">·</span>}
+                              <span className="font-semibold text-slate-200">{noteName}</span>
+                              <span className="text-[9.5px] opacity-70">({info.name})</span>
+                            </span>
+                          );
+                        })
+                      : activeScale.intervals.map((interval, iIdx) => {
+                          const semitone = (board.rootSemitone + interval) % 12;
+                          const noteName = getNoteName(semitone, board.accidental);
+                          const info = getScaleIntervalInfo(interval, activeScale);
+                          return (
+                            <span key={interval} className="inline-flex items-center gap-0.5">
+                              {iIdx > 0 && <span className="text-slate-600 font-normal">·</span>}
+                              <span className="font-semibold text-slate-200">{noteName}</span>
+                              <span className="text-[9.5px] opacity-70">({info.name})</span>
+                            </span>
+                          );
+                        })}
+                  </div>
+                </div>
+
+                {/* Right: Board Card Controls (Duplicate, Remove) */}
+                <div className="flex items-center gap-1">
                   <button
-                    key={interval}
-                    onClick={() => setMelodyFilter(semitone)}
-                    className={`px-2 py-0.5 rounded text-[11px] font-semibold flex items-center gap-1 transition border ${
-                      isSelected
-                        ? 'bg-amber-400 text-slate-950 border-amber-300 font-bold'
-                        : 'bg-slate-800 text-slate-300 border-slate-700 hover:text-white'
-                    }`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      duplicateBoard(bIdx);
+                    }}
+                    disabled={fretboards.length >= 5}
+                    className="px-1.5 py-1 text-[10.5px] font-bold text-slate-400 hover:text-white bg-slate-950 hover:bg-slate-800 rounded border border-slate-800 transition flex items-center gap-1"
+                    title="Duplicate this fretboard"
                   >
-                    <span className="w-1.5 h-1.5 rounded-full inline-block" style={{ backgroundColor: info.bgHex }}></span>
-                    <span>{noteName}</span>
+                    <span>Copy</span>
                   </button>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      </div>
 
-      {/* 3. FRETBOARD RIGHT AT TOP */}
-      <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-3 shadow-md space-y-2">
-        <div className="flex items-center justify-between text-xs text-slate-400">
-          <div className="flex items-center gap-2">
-            <span className="font-bold text-slate-300 uppercase tracking-wider text-[11px]">
-              {instrument === 'ukulele' ? 'Ukulele Fretboard' : 'Guitar Fretboard'}
-            </span>
-            <span className="text-[10px] text-amber-400 font-mono bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20">
-              {instrument === 'ukulele' ? 'Bottom to Top: G · C · E · A' : 'Bottom to Top: E · A · D · G · B · E'}
-            </span>
-          </div>
-          <div className="flex items-center gap-2.5 text-[10px]">
-            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-rose-500 inline-block"></span> 1 (Root)</span>
-            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-amber-400 inline-block"></span> 3rd</span>
-            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-sky-400 inline-block"></span> 5th</span>
-            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-purple-400 inline-block"></span> 7th</span>
-          </div>
-        </div>
+                  {fretboards.length > 1 && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        removeBoard(board.id);
+                      }}
+                      className="px-1.5 py-1 text-[10.5px] font-bold text-rose-400 hover:text-rose-200 bg-slate-950 hover:bg-rose-950/40 rounded border border-slate-800 hover:border-rose-800/60 transition flex items-center gap-1"
+                      title="Remove this fretboard"
+                    >
+                      <span>Remove</span>
+                    </button>
+                  )}
+                </div>
+              </div>
 
-        <div className="overflow-x-auto pb-1">
-          <div className="min-w-[760px] rounded-lg border border-slate-700/80 p-2 select-none relative bg-gradient-to-b from-[#181512] via-[#241f1c] to-[#151311] shadow-inner">
-            <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-auto" style={{ userSelect: 'none' }}>
-              {/* Markers */}
-              <g opacity="0.55">
-                <circle cx={(fretX[4] + fretX[5]) / 2} cy={height / 2} r="4" fill="#f8fafc" />
-                <circle cx={(fretX[6] + fretX[7]) / 2} cy={height / 2} r="4" fill="#f8fafc" />
-                <circle cx={(fretX[9] + fretX[10]) / 2} cy={height / 2} r="4" fill="#f8fafc" />
-                <circle cx={(fretX[11] + fretX[12]) / 2} cy={height * 0.32} r="3.5" fill="#f8fafc" />
-                <circle cx={(fretX[11] + fretX[12]) / 2} cy={height * 0.68} r="3.5" fill="#f8fafc" />
-              </g>
+              {/* Compact Inline Selector Rows */}
+              <div className="space-y-1.5 text-xs">
+                {/* Row 1: Type (Chord/Scale) + Compact Root Strip + Accidental */}
+                <div className="flex flex-wrap items-center gap-2">
+                  {/* Chord vs Scale Pill Switcher */}
+                  <div className="bg-slate-950 border border-slate-800 rounded-lg p-0.5 flex items-center shrink-0">
+                    <button
+                      onClick={() => updateBoard(board.id, { targetType: 'chord' })}
+                      className={`px-2 py-0.5 rounded text-[11px] font-bold transition ${
+                        board.targetType === 'chord'
+                          ? 'bg-emerald-500 text-slate-950 shadow-sm'
+                          : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      Chord
+                    </button>
+                    <button
+                      onClick={() => updateBoard(board.id, { targetType: 'scale' })}
+                      className={`px-2 py-0.5 rounded text-[11px] font-bold transition ${
+                        board.targetType === 'scale'
+                          ? 'bg-emerald-500 text-slate-950 shadow-sm'
+                          : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      Scale
+                    </button>
+                  </div>
 
-              {/* String Names Column (Left of Nut) */}
-              {currentStrings.map((str) => (
-                <text
-                  key={`name-${str.stringNum}`}
-                  x="11"
-                  y={str.y + 3.5}
-                  fill="#94a3b8"
-                  fontSize="10"
-                  fontFamily="JetBrains Mono, monospace"
-                  fontWeight="bold"
-                  textAnchor="middle"
-                >
-                  {str.name}
-                </text>
-              ))}
-
-              {/* Nut */}
-              <rect x={nutWidth} y="8" width="8" height={height - 18} rx="2" fill="#e2e8f0" stroke="#94a3b8" strokeWidth="1" />
-              <text x={nutWidth + 4} y="6" fill="#94a3b8" fontSize="7.5" fontFamily="JetBrains Mono, monospace" fontWeight="bold" textAnchor="middle">
-                NUT
-              </text>
-
-              {/* Fret Wires */}
-              {fretX.map((x, f) => {
-                if (f === 0) return null;
-                return (
-                  <g key={`fret-${f}`}>
-                    <line x1={x} y1="10" x2={x} y2={height - 10} stroke="#cbd5e1" strokeWidth="2" />
-                    <line x1={x + 1} y1="10" x2={x + 1} y2={height - 10} stroke="#475569" strokeWidth="0.8" />
-                    <text x={(fretX[f - 1] + x) / 2} y={height - 1} fill="#64748b" fontSize="8.5" fontFamily="JetBrains Mono, monospace" fontWeight="bold" textAnchor="middle">
-                      {f}
-                    </text>
-                  </g>
-                );
-              })}
-
-              {/* Strings */}
-              {currentStrings.map((str) => (
-                <g key={`str-${str.stringNum}`}>
-                  <line x1={nutWidth + 8} y1={str.y} x2={width - 15} y2={str.y} stroke="#1e293b" strokeWidth={str.gauge + 1.5} opacity="0.8" />
-                  <line x1={nutWidth + 8} y1={str.y} x2={width - 15} y2={str.y} stroke="#f1f5f9" strokeWidth={str.gauge} />
-                </g>
-              ))}
-
-              {/* Notes */}
-              <g id="notes-layer">
-                {currentStrings.map((str) => {
-                  const y = str.y;
-                  const baseMidi = (instrument === 'ukulele' && str.stringNum === 4 && tuning === 'low-g')
-                    ? str.midiLow!
-                    : str.midi;
-                  const targetSemitones = targetType === 'chord'
-                    ? new Set(activeQuality.intervals.map(i => (rootSemitone + i) % 12))
-                    : new Set(activeScale.intervals.map(i => (rootSemitone + i) % 12));
-
-                  return Array.from({ length: numFrets + 1 }, (_, f) => {
-                    const semitone = (str.semitone + f) % 12;
-                    const midiPitch = baseMidi + f;
-                    const isTone = targetSemitones.has(semitone);
-                    if (!isTone) return null;
-
-                    const cx = f === 0 ? nutWidth + 4 : (fretX[f - 1] + fretX[f]) / 2;
-                    const intervalFromRoot = (semitone - rootSemitone + 12) % 12;
-                    
-                    let info: { name: string; bgHex: string; colorClass: string };
-                    if (targetType === 'chord') {
-                      info = getIntervalInfo(intervalFromRoot, activeQuality);
-                    } else {
-                      info = getScaleIntervalInfo(intervalFromRoot, activeScale);
-                    }
-
-                    const isMelodyHighlighted = targetType === 'chord' && melodyFilter !== 'all' && melodyFilter === semitone;
-                    const isScaleRoot = targetType === 'scale' && intervalFromRoot === 0;
-                    const displayText = labelMode === 'notes' ? getNoteName(semitone) : info.name;
-
-                    return (
-                      <g
-                        key={`note-${str.stringNum}-${f}`}
-                        className="cursor-pointer group"
-                        onClick={() => playNote(midiPitch, 0, 1.8)}
-                      >
-                        {isMelodyHighlighted && (
-                          <circle cx={cx} cy={y} r={instrument === 'guitar' ? 10.5 : 12.5} fill="none" stroke="#fbbf24" strokeWidth="2" className="animate-pulse" />
-                        )}
-                        {isScaleRoot && (
-                          <circle cx={cx} cy={y} r={instrument === 'guitar' ? 10.5 : 12.5} fill="none" stroke="#f43f5e" strokeWidth="2" />
-                        )}
-                        <circle
-                          cx={cx}
-                          cy={y}
-                          r={instrument === 'guitar' ? 7.5 : 9}
-                          fill={info.bgHex}
-                          stroke="#0f172a"
-                          strokeWidth="1.5"
-                          className="transition-all duration-150 group-hover:stroke-white group-hover:stroke-[2px] drop-shadow"
-                        />
-                        <text
-                          x={cx}
-                          y={y + (instrument === 'guitar' ? 2.6 : 3.2)}
-                          fill={info.name === '1' ? '#ffffff' : '#090d16'}
-                          fontSize={instrument === 'guitar' ? '7.5' : '8.5'}
-                          fontFamily="JetBrains Mono, monospace"
-                          fontWeight="bold"
-                          textAnchor="middle"
-                          pointerEvents="none"
+                  {/* Root note pills (Ultra-compact) */}
+                  <div className="flex items-center gap-0.5 overflow-x-auto pb-0.5">
+                    {Array.from({ length: 12 }, (_, i) => {
+                      const note = getNoteName(i, board.accidental);
+                      const isSelected = i === board.rootSemitone;
+                      return (
+                        <button
+                          key={i}
+                          onClick={() => updateBoard(board.id, { rootSemitone: i })}
+                          className={`w-6 h-6 rounded font-mono text-[11px] font-bold transition flex items-center justify-center border ${
+                            isSelected
+                              ? 'bg-amber-500 text-slate-950 border-amber-400 shadow scale-105 z-10'
+                              : 'bg-slate-950 text-slate-300 border-slate-800 hover:bg-slate-800 hover:text-white'
+                          }`}
                         >
-                          {displayText}
-                        </text>
+                          {note}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Accidental toggle */}
+                  <button
+                    onClick={() => updateBoard(board.id, { accidental: board.accidental === 'b' ? '#' : 'b' })}
+                    className="px-1.5 py-0.5 rounded bg-slate-950 text-amber-400 font-mono text-xs border border-slate-800 hover:border-slate-700 font-bold shrink-0"
+                    title="Toggle Accidentals"
+                  >
+                    {board.accidental === 'b' ? '♭' : '♯'}
+                  </button>
+                </div>
+
+                {/* Row 2: Chord Quality or Scale Quality Pills */}
+                <div className="flex items-center gap-1 overflow-x-auto pb-1">
+                  {board.targetType === 'chord' ? (
+                    Object.entries(CHORD_DEFINITIONS).map(([key, chord]) => {
+                      const isSelected = key === board.qualityKey;
+                      return (
+                        <button
+                          key={key}
+                          onClick={() => updateBoard(board.id, { qualityKey: key })}
+                          className={`px-2 py-0.5 rounded text-[11px] font-medium whitespace-nowrap transition border ${
+                            isSelected
+                              ? 'bg-emerald-500 text-slate-950 border-emerald-400 shadow-sm font-bold scale-105'
+                              : 'bg-slate-950/80 text-slate-400 border-slate-800/80 hover:bg-slate-800 hover:text-white'
+                          }`}
+                        >
+                          {chord.name}
+                        </button>
+                      );
+                    })
+                  ) : (
+                    Object.entries(SCALE_DEFINITIONS).map(([key, scale]) => {
+                      const isSelected = key === board.scaleKey;
+                      return (
+                        <button
+                          key={key}
+                          onClick={() => updateBoard(board.id, { scaleKey: key })}
+                          className={`px-2 py-0.5 rounded text-[11px] font-medium whitespace-nowrap transition border ${
+                            isSelected
+                              ? 'bg-emerald-500 text-slate-950 border-emerald-400 shadow-sm font-bold scale-105'
+                              : 'bg-slate-950/80 text-slate-400 border-slate-800/80 hover:bg-slate-800 hover:text-white'
+                          }`}
+                        >
+                          {scale.name}
+                        </button>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
+
+              {/* FRETBOARD SVG (Clickable for Audio) */}
+              <div className="overflow-x-auto pb-1">
+                <div className="min-w-[760px] rounded-lg border border-slate-700/80 p-2 select-none relative bg-gradient-to-b from-[#181512] via-[#241f1c] to-[#151311] shadow-inner">
+                  <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-auto" style={{ userSelect: 'none' }}>
+                    {/* Markers */}
+                    <g opacity="0.55">
+                      <circle cx={(fretX[4] + fretX[5]) / 2} cy={height / 2} r="4" fill="#f8fafc" />
+                      <circle cx={(fretX[6] + fretX[7]) / 2} cy={height / 2} r="4" fill="#f8fafc" />
+                      <circle cx={(fretX[9] + fretX[10]) / 2} cy={height / 2} r="4" fill="#f8fafc" />
+                      <circle cx={(fretX[11] + fretX[12]) / 2} cy={height * 0.32} r="3.5" fill="#f8fafc" />
+                      <circle cx={(fretX[11] + fretX[12]) / 2} cy={height * 0.68} r="3.5" fill="#f8fafc" />
+                    </g>
+
+                    {/* String Names Column (Left of Nut) */}
+                    {currentStrings.map((str) => (
+                      <text
+                        key={`name-${str.stringNum}`}
+                        x="11"
+                        y={str.y + 3.5}
+                        fill="#94a3b8"
+                        fontSize="10"
+                        fontFamily="JetBrains Mono, monospace"
+                        fontWeight="bold"
+                        textAnchor="middle"
+                      >
+                        {str.name}
+                      </text>
+                    ))}
+
+                    {/* Nut */}
+                    <rect x={nutWidth} y="8" width="8" height={height - 18} rx="2" fill="#e2e8f0" stroke="#94a3b8" strokeWidth="1" />
+                    <text x={nutWidth + 4} y="6" fill="#94a3b8" fontSize="7.5" fontFamily="JetBrains Mono, monospace" fontWeight="bold" textAnchor="middle">
+                      NUT
+                    </text>
+
+                    {/* Fret Wires */}
+                    {fretX.map((x, f) => {
+                      if (f === 0) return null;
+                      return (
+                        <g key={`fret-${f}`}>
+                          <line x1={x} y1="10" x2={x} y2={height - 10} stroke="#cbd5e1" strokeWidth="2" />
+                          <line x1={x + 1} y1="10" x2={x + 1} y2={height - 10} stroke="#475569" strokeWidth="0.8" />
+                          <text x={(fretX[f - 1] + x) / 2} y={height - 1} fill="#64748b" fontSize="8.5" fontFamily="JetBrains Mono, monospace" fontWeight="bold" textAnchor="middle">
+                            {f}
+                          </text>
+                        </g>
+                      );
+                    })}
+
+                    {/* Strings */}
+                    {currentStrings.map((str) => (
+                      <g key={`str-${str.stringNum}`}>
+                        <line x1={nutWidth + 8} y1={str.y} x2={width - 15} y2={str.y} stroke="#1e293b" strokeWidth={str.gauge + 1.5} opacity="0.8" />
+                        <line x1={nutWidth + 8} y1={str.y} x2={width - 15} y2={str.y} stroke="#f1f5f9" strokeWidth={str.gauge} />
                       </g>
-                    );
-                  });
-                })}
-              </g>
-            </svg>
-          </div>
-        </div>
+                    ))}
+
+                    {/* Notes Layer */}
+                    <g id={`notes-layer-${board.id}`}>
+                      {currentStrings.map((str) => {
+                        const y = str.y;
+                        const baseMidi = (instrument === 'ukulele' && str.stringNum === 4 && tuning === 'low-g')
+                          ? str.midiLow!
+                          : str.midi;
+                        const targetSemitones = board.targetType === 'chord'
+                          ? new Set(activeQuality.intervals.map(i => (board.rootSemitone + i) % 12))
+                          : new Set(activeScale.intervals.map(i => (board.rootSemitone + i) % 12));
+
+                        return Array.from({ length: numFrets + 1 }, (_, f) => {
+                          const semitone = (str.semitone + f) % 12;
+                          const midiPitch = baseMidi + f;
+                          const isTone = targetSemitones.has(semitone);
+                          if (!isTone) return null;
+
+                          const cx = f === 0 ? nutWidth + 4 : (fretX[f - 1] + fretX[f]) / 2;
+                          const intervalFromRoot = (semitone - board.rootSemitone + 12) % 12;
+
+                          let info: { name: string; bgHex: string; colorClass: string };
+                          if (board.targetType === 'chord') {
+                            info = getIntervalInfo(intervalFromRoot, activeQuality);
+                          } else {
+                            info = getScaleIntervalInfo(intervalFromRoot, activeScale);
+                          }
+
+                          const isRoot = intervalFromRoot === 0;
+                          const displayText = labelMode === 'notes' ? getNoteName(semitone, board.accidental) : info.name;
+
+                          return (
+                            <g
+                              key={`note-${board.id}-${str.stringNum}-${f}`}
+                              className="cursor-pointer group"
+                              onClick={() => playNote(midiPitch, 0, 1.8)}
+                            >
+                              {isRoot && (
+                                <circle cx={cx} cy={y} r={instrument === 'guitar' ? 10.5 : 12.5} fill="none" stroke="#f43f5e" strokeWidth="2" />
+                              )}
+                              <circle
+                                cx={cx}
+                                cy={y}
+                                r={instrument === 'guitar' ? 7.5 : 9}
+                                fill={info.bgHex}
+                                stroke="#0f172a"
+                                strokeWidth="1.5"
+                                className="transition-all duration-150 group-hover:stroke-white group-hover:stroke-[2px] drop-shadow"
+                              />
+                              <text
+                                x={cx}
+                                y={y + (instrument === 'guitar' ? 2.6 : 3.2)}
+                                fill={info.name === '1' ? '#ffffff' : '#090d16'}
+                                fontSize={instrument === 'guitar' ? '7.5' : '8.5'}
+                                fontFamily="JetBrains Mono, monospace"
+                                fontWeight="bold"
+                                textAnchor="middle"
+                                pointerEvents="none"
+                              >
+                                {displayText}
+                              </text>
+                            </g>
+                          );
+                        });
+                      })}
+                    </g>
+                  </svg>
+                </div>
+              </div>
+            </div>
+          );
+        })}
       </div>
 
-      {/* 4. CHORD VOICINGS OR SCALE OVERVIEW */}
-      {targetType === 'chord' ? (
-        <div className="space-y-2.5">
+      {/* 3. REFERENCE SECTION FOR THE FOCUSED FRETBOARD (CAGFD/CAGED VOICINGS OR SCALE FORMULA) */}
+      {focusedBoard && focusedBoard.targetType === 'chord' ? (
+        <div className="space-y-2.5 pt-2">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <h2 className="text-sm font-bold text-white uppercase tracking-wider">
                 {instrument === 'ukulele' ? 'CAGFD Voicings' : 'CAGED Voicings'}
               </h2>
               <span className="px-2 py-0.5 rounded-full bg-slate-800 text-amber-400 text-xs font-mono font-bold border border-slate-700">
-                {displayedVoicings.length} {displayedVoicings.length === 1 ? 'Shape' : 'Shapes'}
+                {getNoteName(focusedBoard.rootSemitone, focusedBoard.accidental)}{CHORD_DEFINITIONS[focusedBoard.qualityKey]?.symbol || ''} ({voicings.length} {voicings.length === 1 ? 'Shape' : 'Shapes'})
               </span>
             </div>
 
@@ -1172,143 +1245,137 @@ export default function ChordMelodyStudio({ initialInstrument = 'ukulele' }: Pro
             </span>
           </div>
 
-          {displayedVoicings.length === 0 ? (
-            <div className="py-8 text-center text-slate-400 bg-slate-900/50 rounded-xl border border-slate-800 space-y-2">
-              <p className="font-medium text-white text-sm">No voicings with {getNoteName(Number(melodyFilter))} on top.</p>
-              <button
-                onClick={() => setMelodyFilter('all')}
-                className="px-3 py-1 bg-amber-500 text-slate-950 font-bold text-xs rounded-lg hover:bg-amber-400 transition"
-              >
-                Reset Filter
-              </button>
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2.5">
-              {displayedVoicings.map((voicing, vIdx) => {
-                const topSemi = voicing.topVoice.semitone;
-                const topName = getNoteName(topSemi);
-                const topInterval = (topSemi - rootSemitone + 12) % 12;
-                const topInfo = getIntervalInfo(topInterval, activeQuality);
-                const isFiltered = melodyFilter === topSemi;
-
-                return (
-                  <div
-                    key={`voicing-${vIdx}`}
-                    className={`bg-slate-900/90 border rounded-xl p-3 flex flex-col justify-between hover:border-amber-500/50 hover:shadow-lg hover:shadow-amber-500/5 transition-all group ${
-                      isFiltered ? 'border-amber-500/80 bg-amber-950/15' : 'border-slate-800'
-                    }`}
-                  >
-                    <div className="space-y-2">
-                      {/* Top: Shape name & Fret */}
-                      <div className="flex items-center justify-between text-[11px] gap-1">
-                        <span
-                          className="px-1.5 py-0.5 rounded font-bold bg-amber-500/15 text-amber-400 border border-amber-500/30 truncate max-w-[110px]"
-                          title={voicing.shapeName}
-                        >
-                          {voicing.shapeName}
-                        </span>
-                        <span className="font-mono text-slate-400 font-bold bg-slate-950 px-1.5 py-0.5 rounded border border-slate-800 text-[10px] shrink-0">
-                          Fret {voicing.minFret}
-                        </span>
-                      </div>
-
-                      {/* Melody Badge */}
-                      <div className="px-1.5 py-1 rounded-lg bg-slate-950 border border-slate-800 flex items-center justify-between text-[11px]">
-                        <span className="text-[9px] uppercase font-bold text-slate-400">Melody:</span>
-                        <span className={`px-1.5 py-0.2 rounded font-mono font-bold text-[10px] ${topInfo.colorClass}`}>
-                          {topName} ({topInfo.name})
-                        </span>
-                      </div>
-
-                      {/* Mini Chord Box */}
-                      <div
-                        className="flex justify-center cursor-pointer py-0.5"
-                        onClick={() => strumChord(voicing.frets)}
-                        title="Click to Strum"
-                      >
-                        <MiniChordDiagram
-                          frets={voicing.frets}
-                          topVoice={voicing.topVoice}
-                          rootSemitone={rootSemitone}
-                          quality={activeQuality}
-                          labelMode={labelMode}
-                          instrument={instrument}
-                          getNoteName={getNoteName}
-                          getIntervalInfo={getIntervalInfo}
-                        />
-                      </div>
-
-                      {/* Tab Notation */}
-                      <div className="text-center font-mono text-[10.5px] font-bold text-slate-300 bg-slate-950/60 py-1 rounded border border-slate-800/60">
-                        [ {voicing.frets.map(f => (f === -1 ? 'x' : f)).join(' ')} ]
-                      </div>
-                    </div>
-
-                    {/* Strum button */}
-                    <div className="pt-2 mt-2 border-t border-slate-800/80">
-                      <button
-                        onClick={() => strumChord(voicing.frets)}
-                        className="w-full py-1.5 rounded-lg bg-slate-800 hover:bg-amber-500 hover:text-slate-950 text-slate-200 text-xs font-bold transition flex items-center justify-center gap-1 shadow-sm"
-                      >
-                        <svg className="w-3.5 h-3.5 text-amber-400 group-hover:text-slate-950" fill="currentColor" viewBox="0 0 20 20">
-                          <path d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" />
-                        </svg>
-                        <span>Strum</span>
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      ) : (
-        <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-4 shadow-sm space-y-3">
-          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800/80 pb-2.5">
-            <div className="flex items-center gap-2">
-              <h2 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
-                <span>🎼</span>
-                <span>{scaleName} Scale Formula & Reference</span>
-              </h2>
-              <span className="px-2 py-0.5 rounded-full bg-slate-800 text-emerald-400 text-xs font-mono font-bold border border-slate-700">
-                {activeScale.intervals.length} Notes
-              </span>
-            </div>
-            <span className="text-xs text-slate-400">
-              Click any note on the fretboard to hear its pitch
-            </span>
-          </div>
-
-          <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-2">
-            {activeScale.intervals.map((interval, idx) => {
-              const semitone = (rootSemitone + interval) % 12;
-              const noteName = getNoteName(semitone);
-              const info = getScaleIntervalInfo(interval, activeScale);
-              const isRoot = interval === 0;
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2.5">
+            {voicings.map((voicing, vIdx) => {
+              const activeQuality = CHORD_DEFINITIONS[focusedBoard.qualityKey] || CHORD_DEFINITIONS['maj'];
+              const topSemi = voicing.topVoice.semitone;
+              const topName = getNoteName(topSemi, focusedBoard.accidental);
+              const topInterval = (topSemi - focusedBoard.rootSemitone + 12) % 12;
+              const topInfo = getIntervalInfo(topInterval, activeQuality);
 
               return (
                 <div
-                  key={idx}
-                  className={`bg-slate-950/80 border rounded-lg p-2.5 text-center flex flex-col items-center justify-center gap-1 ${
-                    isRoot ? 'border-rose-500/60 bg-rose-950/10' : 'border-slate-800'
-                  }`}
+                  key={`voicing-${vIdx}`}
+                  className="bg-slate-900/90 border border-slate-800 rounded-xl p-3 flex flex-col justify-between hover:border-amber-500/50 hover:shadow-lg hover:shadow-amber-500/5 transition-all group"
                 >
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 font-mono">
-                    Degree {idx + 1}
-                  </span>
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center font-mono font-bold text-xs my-0.5 ${info.colorClass}`}>
-                    {labelMode === 'notes' ? noteName : info.name}
+                  <div className="space-y-2">
+                    {/* Top: Shape name & Fret */}
+                    <div className="flex items-center justify-between text-[11px] gap-1">
+                      <span
+                        className="px-1.5 py-0.5 rounded font-bold bg-amber-500/15 text-amber-400 border border-amber-500/30 truncate max-w-[110px]"
+                        title={voicing.shapeName}
+                      >
+                        {voicing.shapeName}
+                      </span>
+                      <span className="font-mono text-slate-400 font-bold bg-slate-950 px-1.5 py-0.5 rounded border border-slate-800 text-[10px] shrink-0">
+                        Fret {voicing.minFret}
+                      </span>
+                    </div>
+
+                    {/* Melody Badge */}
+                    <div className="px-1.5 py-1 rounded-lg bg-slate-950 border border-slate-800 flex items-center justify-between text-[11px]">
+                      <span className="text-[9px] uppercase font-bold text-slate-400">Melody:</span>
+                      <span className={`px-1.5 py-0.2 rounded font-mono font-bold text-[10px] ${topInfo.colorClass}`}>
+                        {topName} ({topInfo.name})
+                      </span>
+                    </div>
+
+                    {/* Mini Chord Box */}
+                    <div
+                      className="flex justify-center cursor-pointer py-0.5"
+                      onClick={() => strumChord(voicing.frets)}
+                      title="Click to Strum"
+                    >
+                      <MiniChordDiagram
+                        frets={voicing.frets}
+                        topVoice={voicing.topVoice}
+                        rootSemitone={focusedBoard.rootSemitone}
+                        quality={activeQuality}
+                        labelMode={labelMode}
+                        instrument={instrument}
+                        getNoteName={(s) => getNoteName(s, focusedBoard.accidental)}
+                        getIntervalInfo={getIntervalInfo}
+                      />
+                    </div>
+
+                    {/* Tab Notation */}
+                    <div className="text-center font-mono text-[10.5px] font-bold text-slate-300 bg-slate-950/60 py-1 rounded border border-slate-800/60">
+                      [ {voicing.frets.map(f => (f === -1 ? 'x' : f)).join(' ')} ]
+                    </div>
                   </div>
-                  <div className="text-xs font-bold text-white font-mono">
-                    {noteName} <span className="text-slate-400 text-[10px]">({info.name})</span>
+
+                  {/* Strum button */}
+                  <div className="pt-2 mt-2 border-t border-slate-800/80">
+                    <button
+                      onClick={() => strumChord(voicing.frets)}
+                      className="w-full py-1.5 rounded-lg bg-slate-800 hover:bg-amber-500 hover:text-slate-950 text-slate-200 text-xs font-bold transition flex items-center justify-center gap-1 shadow-sm"
+                    >
+                      <svg className="w-3.5 h-3.5 text-amber-400 group-hover:text-slate-950" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" />
+                      </svg>
+                      <span>Strum</span>
+                    </button>
                   </div>
-                  <span className="text-[9px] text-slate-500 font-mono">
-                    {interval} semitones
-                  </span>
                 </div>
               );
             })}
           </div>
+        </div>
+      ) : focusedBoard && (
+        <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-4 shadow-sm space-y-3 pt-2">
+          {(() => {
+            const activeScale = SCALE_DEFINITIONS[focusedBoard.scaleKey] || SCALE_DEFINITIONS['major'];
+            const scaleName = `${getNoteName(focusedBoard.rootSemitone, focusedBoard.accidental)} ${activeScale.name}`;
+            return (
+              <>
+                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800/80 pb-2.5">
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
+                      <span>🎼</span>
+                      <span>{scaleName} Scale Formula & Reference</span>
+                    </h2>
+                    <span className="px-2 py-0.5 rounded-full bg-slate-800 text-emerald-400 text-xs font-mono font-bold border border-slate-700">
+                      {activeScale.intervals.length} Notes
+                    </span>
+                  </div>
+                  <span className="text-xs text-slate-400">
+                    Click any note on the fretboard to hear its pitch
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-2">
+                  {activeScale.intervals.map((interval, idx) => {
+                    const semitone = (focusedBoard.rootSemitone + interval) % 12;
+                    const noteName = getNoteName(semitone, focusedBoard.accidental);
+                    const info = getScaleIntervalInfo(interval, activeScale);
+                    const isRoot = interval === 0;
+
+                    return (
+                      <div
+                        key={idx}
+                        className={`bg-slate-950/80 border rounded-lg p-2.5 text-center flex flex-col items-center justify-center gap-1 ${
+                          isRoot ? 'border-rose-500/60 bg-rose-950/10' : 'border-slate-800'
+                        }`}
+                      >
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 font-mono">
+                          Degree {idx + 1}
+                        </span>
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center font-mono font-bold text-xs my-0.5 ${info.colorClass}`}>
+                          {labelMode === 'notes' ? noteName : info.name}
+                        </div>
+                        <div className="text-xs font-bold text-white font-mono">
+                          {noteName} <span className="text-slate-400 text-[10px]">({info.name})</span>
+                        </div>
+                        <span className="text-[9px] text-slate-500 font-mono">
+                          {interval} semitones
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </>
+            );
+          })()}
         </div>
       )}
 
@@ -1318,7 +1385,7 @@ export default function ChordMelodyStudio({ initialInstrument = 'ukulele' }: Pro
           <div className="bg-slate-900 border border-slate-800 max-w-xl w-full rounded-2xl p-5 shadow-2xl space-y-3 max-h-[90vh] overflow-y-auto text-xs sm:text-sm">
             <div className="flex items-center justify-between border-b border-slate-800 pb-2.5">
               <h3 className="text-base font-bold text-white flex items-center gap-2">
-                <span>{instrument === 'ukulele' ? 'Ukulele CAGFD & Chord Melody' : 'Guitar CAGED System & Chord Melody'}</span>
+                <span>{instrument === 'ukulele' ? 'Ukulele CAGFD & Modal Comparison' : 'Guitar CAGED System & Modal Comparison'}</span>
               </h3>
               <button onClick={() => setHelpOpen(false)} className="text-slate-400 hover:text-white text-xl leading-none">
                 &times;
@@ -1326,7 +1393,7 @@ export default function ChordMelodyStudio({ initialInstrument = 'ukulele' }: Pro
             </div>
             <div className="space-y-2.5 text-slate-300 leading-relaxed">
               <p>
-                In chord melody, the human ear instinctively identifies the <strong>highest note</strong> in any chord as the vocal or lead melody.
+                Stacking multiple fretboards allows direct visual comparison across chord changes (such as <strong>A7 · D7 · E7</strong> in a 12-bar blues) or modal improvisation (layering <strong>A Minor Blues</strong> over <strong>A7</strong>).
               </p>
               {instrument === 'ukulele' ? (
                 <>
